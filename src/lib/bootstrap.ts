@@ -1,4 +1,4 @@
-import { connectToDatabase } from "@/models/../lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { EventModel } from "@/models/Event";
 import { Admin } from "@/models/Admin";
 import { Team } from "@/models/Team";
@@ -10,85 +10,76 @@ export async function ensureInitialData() {
   // 1. Ensure Event
   let eventDoc = await EventModel.findOne();
   if (!eventDoc) {
-    eventDoc = await EventModel.create({
-      name: "BVTalent Show 2026",
-      description: "One Stage. One Moment. The Crowd Decides. Vote for your favorite performance!",
-      status: "OPEN",
-      votingOpen: true,
-      votingPaused: false,
-      votingClosed: false,
-      showResults: true,
-      showVoteCounts: true,
-      showLeaderboard: true,
-    });
+    try {
+      eventDoc = await EventModel.create({
+        name: "BVTalent Cartoon Party!",
+        description: "Watch the performances. Pick your champions. Change your mind. It's party time!",
+        status: "open",
+        resultsVisible: false,
+        winnerTeamId: null,
+      });
+    } catch {
+      eventDoc = await EventModel.findOne();
+    }
   }
 
   // 2. Ensure Admin User
-  const adminUsername = (process.env.INITIAL_ADMIN_USERNAME || "admin").toLowerCase();
+  const adminUsername = (process.env.ADMIN_USERNAME || "admin").toLowerCase();
   const existingAdmin = await Admin.findOne({ username: adminUsername });
   if (!existingAdmin) {
     const rawPass = process.env.INITIAL_ADMIN_PASSWORD || "AdminTalent2026!";
     const passwordHash = await hashPassword(rawPass);
-    await Admin.create({
-      username: adminUsername,
-      passwordHash,
-      email: "admin@bvtalent.local",
-      role: "superadmin",
-    });
+    try {
+      await Admin.create({
+        username: adminUsername,
+        passwordHash,
+      });
+    } catch {
+      // Ignore concurrent race insert
+    }
   }
 
-  // 3. Ensure Initial Showcase Teams if empty
+  // 3. Ensure Showcase Cartoon Teams
   const teamCount = await Team.countDocuments();
   if (teamCount === 0) {
     const initialTeams = [
       {
-        name: "Neon Pulse",
-        slug: "neon-pulse",
-        description: "Cyberpunk synthwave electronic dancers blending precision robotics and hyper-light choreography.",
+        name: "Team Neon Cats",
+        description: "Electro-funk dance crew with glowing whiskers and laser-fast choreography!",
         image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=80",
-        members: ["Liam Chen", "Zara Vance", "Marcus Bell"],
-        isActive: true,
-        displayOrder: 1,
+        color: "pink",
       },
       {
-        name: "Vocal Symphony",
-        slug: "vocal-symphony",
-        description: "An explosive a cappella ensemble turning contemporary pop and soul into cinematic harmonies.",
+        name: "Bubblegum Beats",
+        description: "A cappella pop harmonizers dropping sweet candy vocals and human beatboxing!",
         image: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=800&auto=format&fit=crop&q=80",
-        members: ["Elena Rostova", "Kai Tanaka", "Maya Brooks", "Darnell Lewis"],
-        isActive: true,
-        displayOrder: 2,
+        color: "yellow",
       },
       {
-        name: "Electric Shadows",
-        slug: "electric-shadows",
-        description: "High-flying acrobatic shadow play featuring breathtaking aerial stunts and visual illusion artistry.",
+        name: "Cosmic Acrobats",
+        description: "Gravity-defying aerial flips, human pyramids, and cartoon-level agility stunts!",
         image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=800&auto=format&fit=crop&q=80",
-        members: ["Aria Thorne", "Leo Silva"],
-        isActive: true,
-        displayOrder: 3,
+        color: "cyan",
       },
       {
-        name: "Cosmic Groove",
-        slug: "cosmic-groove",
-        description: "Funk-fusion powerhouse combining live brass, slap bass, and infectious dance grooves that electrify crowds.",
+        name: "Disco Dragons",
+        description: "Hot brass horns, funky slap bass, and fiery disco energy that shakes the floor!",
         image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&auto=format&fit=crop&q=80",
-        members: ["Siddharth Roy", "Chloe Martin", "Devon Park"],
-        isActive: true,
-        displayOrder: 4,
+        color: "orange",
       },
       {
-        name: "Ignite D-Crew",
-        slug: "ignite-d-crew",
-        description: "World-class breakdancing and hip-hop collective known for gravity-defying power moves and synchronized tricks.",
+        name: "Funky Monks",
+        description: "Old school hip-hop breakdancers spinning on their heads with comedic flair!",
         image: "https://images.unsplash.com/photo-1547153760-18fc86324498?w=800&auto=format&fit=crop&q=80",
-        members: ["Jordan Drake", "Tasha Rivera", "Kenji Sato", "Noah Wright"],
-        isActive: true,
-        displayOrder: 5,
+        color: "lime",
       },
     ];
 
-    await Team.insertMany(initialTeams);
+    try {
+      await Team.insertMany(initialTeams, { ordered: false });
+    } catch {
+      // Ignore concurrent race insert
+    }
   }
 
   return { event: eventDoc };

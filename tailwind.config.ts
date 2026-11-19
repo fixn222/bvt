@@ -10,49 +10,52 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
         party: {
-          dark: "#08060F",
-          card: "#120E1E",
-          surface: "#1A142D",
-          border: "#2E244B",
+          bg: "#130924",
+          dark: "#130924",
+          surface: "#1E1238",
+          card: "#2A1B4E",
+          cardHover: "#352264",
+          border: "#4C3382",
+          yellow: "#FFE600",
+          pink: "#FF2E93",
           neonPink: "#FF2E93",
-          neonPurple: "#9333EA",
-          neonCyan: "#00F0FF",
-          electricViolet: "#7B2CBF",
-          accentPink: "#FF007F",
-          gold: "#FFD700",
+          purple: "#9333EA",
+          violet: "#7C3AED",
+          cyan: "#00F0FF",
+          orange: "#FF6B00",
+          lime: "#22C55E",
+          cream: "#FFF9E6",
         },
-      },
-      backgroundImage: {
-        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "gradient-conic":
-          "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
-        "stage-lights":
-          "radial-gradient(circle at 50% -20%, rgba(147, 51, 234, 0.35), transparent 70%), radial-gradient(circle at 10% 20%, rgba(255, 46, 147, 0.25), transparent 50%), radial-gradient(circle at 90% 20%, rgba(0, 240, 255, 0.2), transparent 50%)",
-        "hero-glow":
-          "linear-gradient(180deg, rgba(147, 51, 234, 0.15) 0%, rgba(255, 46, 147, 0.08) 50%, transparent 100%)",
       },
       boxShadow: {
-        glow: "0 0 25px -5px rgba(147, 51, 234, 0.5)",
-        "glow-pink": "0 0 25px -5px rgba(255, 46, 147, 0.5)",
-        "glow-cyan": "0 0 25px -5px rgba(0, 240, 255, 0.5)",
-        "glow-gold": "0 0 30px -5px rgba(255, 215, 0, 0.5)",
+        cartoon: "4px 4px 0px 0px #000000",
+        "cartoon-sm": "2px 2px 0px 0px #000000",
+        "cartoon-lg": "6px 6px 0px 0px #000000",
+        "cartoon-xl": "8px 8px 0px 0px #000000",
+        "cartoon-pink": "4px 4px 0px 0px #FF2E93",
+        "cartoon-yellow": "4px 4px 0px 0px #FFE600",
+        "cartoon-cyan": "4px 4px 0px 0px #00F0FF",
+        "cartoon-white": "4px 4px 0px 0px #FFFFFF",
       },
       keyframes: {
-        pulseGlow: {
-          "0%, 100%": { opacity: "0.6", transform: "scale(1)" },
-          "50%": { opacity: "1", transform: "scale(1.05)" },
+        wobble: {
+          "0%, 100%": { transform: "rotate(-2deg)" },
+          "50%": { transform: "rotate(2deg)" },
         },
-        shimmer: {
-          "0%": { backgroundPosition: "-200% 0" },
-          "100%": { backgroundPosition: "200% 0" },
+        bounceSubtle: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-6px)" },
+        },
+        popIn: {
+          "0%": { transform: "scale(0.8)", opacity: "0" },
+          "100%": { transform: "scale(1)", opacity: "1" },
         },
       },
       animation: {
-        "pulse-glow": "pulseGlow 4s ease-in-out infinite",
-        shimmer: "shimmer 2.5s infinite",
+        wobble: "wobble 2s ease-in-out infinite",
+        "bounce-subtle": "bounceSubtle 2s ease-in-out infinite",
+        "pop-in": "popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards",
       },
     },
   },

@@ -48,32 +48,32 @@ export const Modal: React.FC<ModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-md sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
         className={cn(
-          "w-full bg-party-card border border-party-border rounded-2xl shadow-2xl p-6 relative overflow-hidden text-left",
-          "shadow-glow",
+          "relative w-full max-h-[min(92dvh,100%)] overflow-y-auto border-3 border-black bg-party-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-left shadow-cartoon-xl rounded-t-3xl sm:rounded-3xl sm:p-6",
           maxWidths[maxWidth]
         )}
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/25 sm:hidden" aria-hidden="true" />
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+          className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-xl text-gray-300 hover:bg-white/10 hover:text-white"
           aria-label="Close dialog"
         >
           <X className="w-5 h-5" />
         </button>
 
         {title && (
-          <h3 className="text-xl font-bold text-white mb-1 tracking-tight">
+          <h3 className="pr-12 text-xl font-black text-white font-cartoon tracking-tight">
             {title}
           </h3>
         )}
         {description && (
-          <p className="text-sm text-gray-400 mb-4">{description}</p>
+          <p className="mt-1 mb-4 text-sm text-gray-300">{description}</p>
         )}
 
         <div className="mt-2">{children}</div>

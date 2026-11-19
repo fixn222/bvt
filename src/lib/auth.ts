@@ -4,7 +4,10 @@ import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 import { IAdminUser } from "@/types";
 
-const JWT_SECRET = process.env.AUTH_SECRET || "bvtalent-default-jwt-secret-minimum-32-characters";
+const JWT_SECRET =
+  process.env.ADMIN_SESSION_SECRET ||
+  process.env.AUTH_SECRET ||
+  "bvtalent-default-jwt-secret-minimum-32-characters";
 export const COOKIE_NAME = "bvtalent_session";
 const SESSION_EXPIRY = 60 * 60 * 24; // 24 hours
 
@@ -22,7 +25,6 @@ export function signAdminToken(user: IAdminUser): string {
     {
       id: user.id,
       username: user.username,
-      email: user.email,
       role: user.role,
     },
     JWT_SECRET,

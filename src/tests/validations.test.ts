@@ -2,77 +2,78 @@ import { describe, it, expect } from "vitest";
 import {
   voteSubmissionSchema,
   adminLoginSchema,
-  teamCreateSchema,
-  voterGenerateSchema,
-  eventSettingsSchema,
+  teamSchema,
+  eventStatusSchema,
 } from "../lib/validations";
 
-describe("Validation Schemas Tests", () => {
-  it("should validate and normalize valid vote submission", () => {
+describe("Cartoon Validation Schemas Tests", () => {
+  it("should validate and trim a valid vote submission", () => {
     const valid = {
-      voterCode: "  bvt-7k2m-9p4q  ",
+      deviceId: "a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d",
       teamId: "507f1f77bcf86cd799439011",
     };
 
     const res = voteSubmissionSchema.safeParse(valid);
     expect(res.success).toBe(true);
     if (res.success) {
-      expect(res.data.voterCode).toBe("BVT-7K2M-9P4Q");
+      expect(res.data.deviceId).toBe("a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d");
       expect(res.data.teamId).toBe("507f1f77bcf86cd799439011");
     }
   });
 
-  it("should reject invalid teamId or empty code in vote submission", () => {
-    const invalidTeam = {
-      voterCode: "BVT-1234-5678",
-      teamId: "not-a-valid-object-id",
-    };
-    expect(voteSubmissionSchema.safeParse(invalidTeam).success).toBe(false);
-
-    const emptyCode = {
-      voterCode: "",
+  it("should reject invalid deviceId format (must be UUID)", () => {
+    const invalid = {
+      deviceId: "not-a-valid-uuid",
       teamId: "507f1f77bcf86cd799439011",
     };
-    expect(voteSubmissionSchema.safeParse(emptyCode).success).toBe(false);
+    expect(voteSubmissionSchema.safeParse(invalid).success).toBe(false);
+  });
+
+  it("should reject invalid teamId (must be 24-char hex ObjectId)", () => {
+    const invalid = {
+      deviceId: "a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d",
+      teamId: "short-id",
+    };
+    expect(voteSubmissionSchema.safeParse(invalid).success).toBe(false);
   });
 
   it("should validate admin login credentials", () => {
     expect(adminLoginSchema.safeParse({ username: "ad", password: "123" }).success).toBe(false);
     expect(
-      adminLoginSchema.safeParse({ username: "admin", password: "SecurePassword123!" }).success
+      adminLoginSchema.safeParse({ username: "admin", password: "AdminPassword123!" }).success
     ).toBe(true);
   });
 
-  it("should validate team creation with required fields", () => {
+  it("should validate team creation with required fields and theme color", () => {
     const validTeam = {
-      name: "The Groove Collective",
+      name: "The Disco Dragons",
+      description: "Funky live performers",
       image: "https://example.com/team.jpg",
-      description: "Live soul performers",
-      isActive: true,
-      displayOrder: 1,
+      color: "yellow",
     };
-    expect(teamCreateSchema.safeParse(validTeam).success).toBe(true);
+    expect(teamSchema.safeParse(validTeam).success).toBe(true);
 
-    const missingName = {
-      image: "https://example.com/team.jpg",
+    const validLocalImage = {
+      name: "The Disco Dragons",
+      description: "Funky live performers",
+      image: "/team.jpg",
+      color: "yellow",
     };
-    expect(teamCreateSchema.safeParse(missingName).success).toBe(false);
+    expect(teamSchema.safeParse(validLocalImage).success).toBe(true);
+
+    const invalidImage = {
+      name: "The Disco Dragons",
+      description: "Funky live performers",
+      image: "plain-text-no-url",
+      color: "yellow",
+    };
+    expect(teamSchema.safeParse(invalidImage).success).toBe(false);
   });
 
-  it("should enforce pass generation bounds (1 to 1000)", () => {
-    expect(voterGenerateSchema.safeParse({ count: 0 }).success).toBe(false);
-    expect(voterGenerateSchema.safeParse({ count: 1001 }).success).toBe(false);
-    expect(voterGenerateSchema.safeParse({ count: 50 }).success).toBe(true);
-  });
-
-  it("should validate event settings updates", () => {
-    const validSettings = {
-      name: "BVTalent Grand Finale",
-      description: "Annual talent showcase",
-      showResults: true,
-      showVoteCounts: false,
-      showLeaderboard: true,
-    };
-    expect(eventSettingsSchema.safeParse(validSettings).success).toBe(true);
+  it("should validate event status transitions", () => {
+    expect(eventStatusSchema.safeParse({ status: "open" }).success).toBe(true);
+    expect(eventStatusSchema.safeParse({ status: "upcoming" }).success).toBe(true);
+    expect(eventStatusSchema.safeParse({ status: "closed" }).success).toBe(true);
+    expect(eventStatusSchema.safeParse({ status: "paused" }).success).toBe(false);
   });
 });

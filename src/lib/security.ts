@@ -1,40 +1,25 @@
 import crypto from "crypto";
+import { isValidDeviceId } from "./device";
 
-const PEPPER = process.env.VOTER_CODE_PEPPER || "bvtalent-default-secure-pepper-key-2026";
-
-// Unambiguous character set (no 0/O, 1/I/L) for clean mobile input
-const CODE_CHARS = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+const DEVICE_SECRET =
+  process.env.DEVICE_HASH_SECRET || "bvtalent-party-default-device-secret-2026";
 
 /**
- * Generate a cryptographically random, unpredictable voter code.
- * Example format: BVT-8K4F-9W2M
+ * Produces a deterministic HMAC-SHA256 hash of the browser device ID.
+ * The raw device ID is never stored in the database.
  */
-export function generateVoterCode(): string {
-  const segment1 = generateRandomString(4);
-  const segment2 = generateRandomString(4);
-  return `BVT-${segment1}-${segment2}`;
-}
-
-function generateRandomString(length: number): string {
-  const bytes = crypto.randomBytes(length);
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    result += CODE_CHARS[bytes[i] % CODE_CHARS.length];
+export function hashDeviceId(rawDeviceId: string): string {
+  if (!isValidDeviceId(rawDeviceId)) {
+    throw new Error("Invalid device ID format");
   }
-  return result;
+  return crypto
+    .createHmac("sha256", DEVICE_SECRET)
+    .update(rawDeviceId.trim())
+    .digest("hex");
 }
 
 /**
- * Generates an HMAC-SHA256 hash of a voter code using the server-side pepper.
- * Normalizes input (trims, uppercase) so voter UX is forgiving of case.
- */
-export function hashVoterCode(rawCode: string): string {
-  const normalized = rawCode.trim().toUpperCase();
-  return crypto.createHmac("sha256", PEPPER).update(normalized).digest("hex");
-}
-
-/**
- * Simple in-memory sliding window rate limiter for public routes (e.g., vote attempts)
+ * Sliding window rate limiter for voting requests
  */
 interface RateLimitEntry {
   count: number;
@@ -45,14 +30,14 @@ const rateLimitMap = new Map<string, RateLimitEntry>();
 
 export function checkRateLimit(
   identifier: string,
-  limit: number = 10,
+  limit: number = 30,
   windowMs: number = 60000
 ): { allowed: boolean; remaining: number; resetInMs: number } {
   const now = Date.now();
   const entry = rateLimitMap.get(identifier);
 
   // Clean up old entries periodically
-  if (rateLimitMap.size > 10000) {
+  if (rateLimitMap.size > 5000) {
     rateLimitMap.forEach((value, key) => {
       if (value.resetAt < now) {
         rateLimitMap.delete(key);

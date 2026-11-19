@@ -2,44 +2,35 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
-import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import {
   Users2,
   Plus,
   Edit2,
   Trash2,
-  Search,
   Sparkles,
-  Check,
-  X,
-  Vote,
+  Flame,
+  AlertCircle,
 } from "lucide-react";
 import { ITeam } from "@/types";
 
 export default function AdminTeamsPage() {
-  const [teams, setTeams] = useState<ITeam[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
+  const [teams, setTeams] = useState<Array<ITeam & { voteCount?: number }>>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Create / Edit modal state
+  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<ITeam | null>(null);
-  const [formName, setFormName] = useState("");
-  const [formSlug, setFormSlug] = useState("");
-  const [formDescription, setFormDescription] = useState("");
-  const [formImage, setFormImage] = useState("");
-  const [formMembers, setFormMembers] = useState("");
-  const [formDisplayOrder, setFormDisplayOrder] = useState(0);
-  const [formIsActive, setFormIsActive] = useState(true);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [image, setImage] = useState("");
+  const [color, setColor] = useState("yellow");
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Delete dialog state
+  // Delete Confirm State
   const [deletingTeam, setDeletingTeam] = useState<ITeam | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -52,7 +43,7 @@ export default function AdminTeamsPage() {
         setTeams(data.teams);
       }
     } catch (err) {
-      console.error("Failed to fetch admin teams:", err);
+      console.error("Failed to fetch teams:", err);
     } finally {
       setIsLoading(false);
     }
@@ -64,28 +55,20 @@ export default function AdminTeamsPage() {
 
   const openCreateModal = () => {
     setEditingTeam(null);
-    setFormName("");
-    setFormSlug("");
-    setFormDescription("");
-    setFormImage(
-      "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=80"
-    );
-    setFormMembers("");
-    setFormDisplayOrder(teams.length + 1);
-    setFormIsActive(true);
+    setName("");
+    setDescription("");
+    setImage("https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=80");
+    setColor("yellow");
     setFormError(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (team: ITeam) => {
     setEditingTeam(team);
-    setFormName(team.name);
-    setFormSlug(team.slug);
-    setFormDescription(team.description || "");
-    setFormImage(team.image || "");
-    setFormMembers(team.members ? team.members.join(", ") : "");
-    setFormDisplayOrder(team.displayOrder || 0);
-    setFormIsActive(team.isActive);
+    setName(team.name);
+    setDescription(team.description || "");
+    setImage(team.image);
+    setColor(team.color || "yellow");
     setFormError(null);
     setIsModalOpen(true);
   };
@@ -94,37 +77,28 @@ export default function AdminTeamsPage() {
     e.preventDefault();
     setFormError(null);
 
-    if (!formName.trim()) {
-      setFormError("Team name is required.");
+    if (!name.trim()) {
+      setFormError("Please enter a team name!");
       return;
     }
 
-    if (!formImage.trim()) {
-      setFormError("Team image URL is required.");
+    if (!image.trim()) {
+      setFormError("Please enter an image URL!");
       return;
     }
 
     try {
       setIsSubmitting(true);
-      const membersArray = formMembers
-        .split(",")
-        .map((m) => m.trim())
-        .filter(Boolean);
-
       const payload = {
-        name: formName.trim(),
-        slug: formSlug.trim() || undefined,
-        description: formDescription.trim(),
-        image: formImage.trim(),
-        members: membersArray,
-        displayOrder: Number(formDisplayOrder),
-        isActive: formIsActive,
+        name: name.trim(),
+        description: description.trim(),
+        image: image.trim(),
+        color,
       };
 
       const url = editingTeam
         ? `/api/admin/teams/${editingTeam._id}`
         : "/api/admin/teams";
-
       const method = editingTeam ? "PATCH" : "POST";
 
       const res = await fetch(url, {
@@ -143,7 +117,7 @@ export default function AdminTeamsPage() {
       fetchTeams();
     } catch (err) {
       console.error("Save team error:", err);
-      setFormError("An unexpected network error occurred.");
+      setFormError("Network error. Try again!");
     } finally {
       setIsSubmitting(false);
     }
@@ -166,179 +140,115 @@ export default function AdminTeamsPage() {
     }
   };
 
-  const filteredTeams = teams.filter((t) => {
-    const matchesSearch =
-      t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.description?.toLowerCase().includes(searchQuery.toLowerCase());
-
-    if (!matchesSearch) return false;
-    if (filterActive === "active") return t.isActive;
-    if (filterActive === "inactive") return !t.isActive;
-    return true;
-  });
+  const colorOptions = [
+    { label: "Yellow", value: "yellow", bg: "bg-party-yellow text-black" },
+    { label: "Pink", value: "pink", bg: "bg-party-pink text-white" },
+    { label: "Cyan", value: "cyan", bg: "bg-party-cyan text-black" },
+    { label: "Lime", value: "lime", bg: "bg-party-lime text-black" },
+    { label: "Orange", value: "orange", bg: "bg-party-orange text-white" },
+    { label: "Purple", value: "purple", bg: "bg-party-purple text-white" },
+  ];
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Top action bar */}
+      {/* Top action header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-white flex items-center gap-2">
-            <Users2 className="w-6 h-6 text-party-neonPink" />
-            <span>Teams Management</span>
-          </h2>
-          <p className="text-xs text-gray-400">
-            Configure participating performers, display order, artwork, and active status
+          <h1 className="text-3xl font-black text-white font-cartoon uppercase flex items-center gap-2">
+            <Users2 className="w-7 h-7 text-party-yellow" />
+            <span>TEAMS ROSTER</span>
+          </h1>
+          <p className="text-xs text-gray-300 font-bold mt-1">
+            Add performing acts, update descriptions, and manage team colors
           </p>
         </div>
 
         <Button
           size="md"
-          variant="primary"
+          variant="yellow"
           onClick={openCreateModal}
-          className="shadow-glow-pink text-xs"
+          className="text-xs font-black shadow-cartoon"
         >
           <Plus className="w-4 h-4 mr-1.5" />
-          <span>Add New Team</span>
+          <span>Add New Performer</span>
         </Button>
       </div>
 
-      {/* Filter and search bar */}
-      <Card className="p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Input
-            placeholder="Search teams by name, style..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 py-2 text-xs"
-          />
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5 pointer-events-none" />
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-xs text-gray-400 font-semibold mr-1">Status:</span>
-          {(["all", "active", "inactive"] as const).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => setFilterActive(mode)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
-                filterActive === mode
-                  ? "bg-party-neonPurple text-white"
-                  : "bg-party-surface text-gray-400 hover:text-white"
-              }`}
-            >
-              {mode}
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      {/* Teams Grid / Table */}
+      {/* Teams Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-64 rounded-2xl bg-party-surface/40 animate-pulse border border-party-border/50"
+              className="h-64 rounded-3xl bg-party-card border-3 border-black shadow-cartoon animate-pulse"
             />
           ))}
         </div>
-      ) : filteredTeams.length === 0 ? (
-        <Card className="p-12 text-center">
-          <Users2 className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-          <h3 className="text-lg font-bold text-white mb-1">No Teams Found</h3>
-          <p className="text-xs text-gray-400 mb-6">
-            No teams match your filter criteria or roster is currently empty.
+      ) : teams.length === 0 ? (
+        <div className="text-center py-16 bg-party-card border-3 border-black rounded-3xl shadow-cartoon max-w-lg mx-auto">
+          <Sparkles className="w-12 h-12 text-party-yellow mx-auto mb-3" />
+          <h3 className="text-xl font-black text-white font-cartoon">
+            No Teams on Roster!
+          </h3>
+          <p className="text-xs text-gray-400 mt-1 mb-6">
+            Get the talent show started by creating your first performing act!
           </p>
-          <Button size="sm" variant="outline" onClick={openCreateModal}>
+          <Button size="sm" variant="yellow" onClick={openCreateModal}>
             Add First Team
           </Button>
-        </Card>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTeams.map((team) => (
-            <Card
+          {teams.map((team) => (
+            <div
               key={team._id}
-              className="overflow-hidden flex flex-col justify-between border-party-border/70 hover:border-party-neonPurple/50 transition-all group"
+              className="bg-party-card border-3 border-black rounded-3xl shadow-cartoon overflow-hidden flex flex-col justify-between"
             >
               <div>
-                <div className="relative w-full h-44 bg-black">
+                <div className="relative w-full h-44 bg-party-bg border-b-3 border-black">
                   {team.image ? (
                     <Image
                       src={team.image}
                       alt={team.name}
                       fill
-                      sizes="400px"
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      sizes="350px"
+                      className="object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Sparkles className="w-8 h-8 text-party-neonPurple" />
+                      <Sparkles className="w-8 h-8 text-party-yellow" />
                     </div>
                   )}
 
-                  <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] font-mono font-bold text-party-neonCyan border border-party-border">
-                    Order #{team.displayOrder}
-                  </div>
-
-                  <div className="absolute top-3 right-3">
-                    <span
-                      className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                        team.isActive
-                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                          : "bg-gray-500/20 text-gray-400 border-gray-500/40"
-                      }`}
-                    >
-                      {team.isActive ? (
-                        <>
-                          <Check className="w-3 h-3 stroke-[3]" /> Active
-                        </>
-                      ) : (
-                        <>
-                          <X className="w-3 h-3" /> Inactive
-                        </>
-                      )}
-                    </span>
+                  <div className="absolute top-3 right-3 bg-party-yellow text-slate-950 font-black text-xs px-3 py-1 rounded-full border-2 border-black shadow-cartoon-sm">
+                    {team.voteCount || 0} Votes
                   </div>
                 </div>
 
                 <div className="p-5">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <h3 className="text-lg font-black text-white group-hover:text-party-neonPink transition-colors">
-                      {team.name}
-                    </h3>
-                    <div className="flex items-center gap-1 text-xs font-mono font-bold text-party-neonCyan bg-party-surface px-2 py-1 rounded border border-party-border">
-                      <Vote className="w-3.5 h-3.5" />
-                      <span>{team.voteCount || 0}</span>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-gray-400 line-clamp-2 mb-3">
+                  <h3 className="text-xl font-black text-white font-cartoon mb-1.5">
+                    {team.name}
+                  </h3>
+                  <p className="text-xs text-gray-300 font-medium line-clamp-2">
                     {team.description || "No description provided."}
                   </p>
-
-                  {team.members && team.members.length > 0 && (
-                    <div className="text-[11px] text-gray-500 truncate">
-                      <span className="text-gray-400 font-semibold">Cast: </span>
-                      {team.members.join(", ")}
-                    </div>
-                  )}
                 </div>
               </div>
 
-              <div className="p-4 pt-0 border-t border-party-border/50 flex items-center justify-end gap-2 mt-2">
+              <div className="p-4 pt-0 border-t-2 border-party-border flex items-center justify-end gap-2 mt-2">
                 <Button
                   size="sm"
-                  variant="secondary"
+                  variant="cyan"
                   onClick={() => openEditModal(team)}
                   className="text-xs px-3 py-1.5"
                 >
-                  <Edit2 className="w-3.5 h-3.5 mr-1 text-party-neonCyan" />
+                  <Edit2 className="w-3.5 h-3.5 mr-1" />
                   <span>Edit</span>
                 </Button>
+
                 <Button
                   size="sm"
-                  variant="danger"
+                  variant="pink"
                   onClick={() => setDeletingTeam(team)}
                   className="text-xs px-3 py-1.5"
                 >
@@ -346,96 +256,88 @@ export default function AdminTeamsPage() {
                   <span>Delete</span>
                 </Button>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       )}
 
-      {/* Create / Edit Team Modal */}
+      {/* Create / Edit Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingTeam ? "Edit Team" : "Create New Team"}
-        description="Provide performance details and artwork for this competing act."
-        maxWidth="lg"
+        title={editingTeam ? "Edit Performer Act" : "Add New Performer Act"}
+        description="Enter the team details and image to display on the voting board."
+        maxWidth="md"
       >
         <form onSubmit={handleSaveTeam} className="space-y-4">
           {formError && (
-            <div className="p-3 bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs rounded-xl font-semibold">
-              {formError}
+            <div className="p-3 bg-party-pink text-white rounded-2xl border-2 border-black text-xs font-black flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{formError}</span>
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-black text-party-yellow uppercase tracking-wider mb-1.5">
+              Team / Act Name *
+            </label>
             <Input
-              label="Team / Act Name *"
-              placeholder="e.g. Neon Pulse"
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Disco Dragons"
               required
-            />
-
-            <Input
-              label="URL Slug (Optional)"
-              placeholder="e.g. neon-pulse"
-              value={formSlug}
-              onChange={(e) => setFormSlug(e.target.value)}
             />
           </div>
 
-          <Input
-            label="Image URL *"
-            placeholder="https://..."
-            value={formImage}
-            onChange={(e) => setFormImage(e.target.value)}
-            required
-          />
+          <div>
+            <label className="block text-xs font-black text-party-yellow uppercase tracking-wider mb-1.5">
+              Image URL *
+            </label>
+            <Input
+              value={image}
+              onChange={(e) => setImage(e.target.value)}
+              placeholder="https://..."
+              required
+            />
+          </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-black text-party-yellow uppercase tracking-wider mb-1.5">
               Description
             </label>
             <textarea
-              className="w-full px-4 py-3 bg-party-surface/80 border border-party-border/80 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-party-neonPurple focus:border-party-neonPink text-xs h-24"
-              placeholder="Brief description of the performance or style..."
-              value={formDescription}
-              onChange={(e) => setFormDescription(e.target.value)}
+              className="w-full px-4 py-3 bg-party-surface border-2 border-black rounded-2xl text-white placeholder-gray-500 text-xs h-20 focus:outline-none focus:ring-2 focus:ring-party-yellow"
+              placeholder="Fun description of their performance..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 
-          <Input
-            label="Cast Members (comma separated)"
-            placeholder="e.g. Maya Chen, Alex Rivera, Leo Vance"
-            value={formMembers}
-            onChange={(e) => setFormMembers(e.target.value)}
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-            <Input
-              type="number"
-              label="Display Order"
-              value={formDisplayOrder}
-              onChange={(e) => setFormDisplayOrder(Number(e.target.value))}
-            />
-
-            <div className="flex items-center gap-3 pt-6">
-              <input
-                type="checkbox"
-                id="isActiveCheck"
-                checked={formIsActive}
-                onChange={(e) => setFormIsActive(e.target.checked)}
-                className="w-4 h-4 rounded text-party-neonPurple focus:ring-party-neonPurple bg-party-surface border-party-border"
-              />
-              <label
-                htmlFor="isActiveCheck"
-                className="text-xs font-semibold text-white select-none cursor-pointer"
-              >
-                Team is Active & Eligible for Votes
-              </label>
+          <div>
+            <label className="block text-xs font-black text-party-yellow uppercase tracking-wider mb-2">
+              Card Theme Color
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {colorOptions.map((opt) => (
+                <button
+                  type="button"
+                  key={opt.value}
+                  onClick={() => setColor(opt.value)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black border-2 border-black transition-all ${
+                    opt.bg
+                  } ${
+                    color === opt.value
+                      ? "ring-4 ring-white shadow-cartoon-sm scale-105"
+                      : "opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-party-border/60">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t-2 border-party-border">
             <Button
               type="button"
               variant="ghost"
@@ -446,27 +348,42 @@ export default function AdminTeamsPage() {
             </Button>
             <Button
               type="submit"
-              variant="primary"
+              variant="yellow"
               isLoading={isSubmitting}
-              className="shadow-glow"
+              className="shadow-cartoon"
             >
-              {editingTeam ? "Update Team" : "Create Team"}
+              {editingTeam ? "Save Changes" : "Create Team"}
             </Button>
           </div>
         </form>
       </Modal>
 
-      {/* Delete / Archive Confirmation Dialog */}
-      <ConfirmDialog
+      {/* Delete Confirmation Modal */}
+      <Modal
         isOpen={!!deletingTeam}
-        title="Delete / Archive Team?"
-        message={`Are you sure you want to remove "${deletingTeam?.name}"? If this team has recorded votes, it will be safely deactivated/archived to preserve vote integrity.`}
-        confirmLabel="Confirm Delete / Archive"
-        variant="danger"
-        isLoading={isDeleting}
-        onConfirm={handleDeleteTeam}
-        onCancel={() => setDeletingTeam(null)}
-      />
+        onClose={() => setDeletingTeam(null)}
+        title="Delete Performer Act?"
+        description={`Are you sure you want to delete "${deletingTeam?.name}"? Any active votes backing this team will be removed.`}
+        maxWidth="sm"
+      >
+        <div className="flex items-center justify-end gap-3 pt-4">
+          <Button
+            variant="ghost"
+            onClick={() => setDeletingTeam(null)}
+            disabled={isDeleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="pink"
+            onClick={handleDeleteTeam}
+            isLoading={isDeleting}
+            className="shadow-cartoon"
+          >
+            Yes, Delete Team
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

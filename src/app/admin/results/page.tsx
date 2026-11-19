@@ -1,125 +1,283 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { LiveLeaderboard } from "@/components/leaderboard/LiveLeaderboard";
-import { Card } from "@/components/ui/Card";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import Image from "next/image";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Eye, EyeOff, Hash, Trophy, Settings, RefreshCw } from "lucide-react";
+import { firePartyConfetti } from "@/components/voting/Confetti";
+import {
+  Trophy,
+  Crown,
+  Eye,
+  EyeOff,
+  Maximize2,
+  Minimize2,
+  RefreshCw,
+  Radio,
+  Medal,
+} from "lucide-react";
+import { ITeamResult, VotingStatus } from "@/types";
+import { formatPercentage } from "@/lib/utils";
 
-export default function AdminResultsPage() {
-  const [settings, setSettings] = useState<{
-    showResults: boolean;
-    showVoteCounts: boolean;
-    showLeaderboard: boolean;
-  }>({
-    showResults: true,
-    showVoteCounts: true,
-    showLeaderboard: true,
-  });
+export default function AdminResultsStagePage() {
+  const [resultsVisible, setResultsVisible] = useState(false);
+  const [status, setStatus] = useState<VotingStatus>("open");
+  const [totalDevices, setTotalDevices] = useState(0);
+  const [teams, setTeams] = useState<ITeamResult[]>([]);
+  const [winners, setWinners] = useState<ITeamResult[]>([]);
+  const [isTie, setIsTie] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [key, setKey] = useState(0);
-
-  const fetchSettings = useCallback(async () => {
+  const fetchResults = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/settings");
+      const res = await fetch(`/api/admin/results?t=${Date.now()}`);
       const data = await res.json();
-      if (data.event) {
-        setSettings({
-          showResults: data.event.showResults,
-          showVoteCounts: data.event.showVoteCounts,
-          showLeaderboard: data.event.showLeaderboard,
-        });
+      if (data.success) {
+        setStatus(data.status);
+        setResultsVisible(data.resultsVisible);
+        setTotalDevices(data.totalDevices || 0);
+        setTeams(data.teams || []);
+        setWinners(data.winners || []);
+        setIsTie(!!data.isTie);
       }
     } catch (err) {
-      console.error("Failed to load settings:", err);
+      console.error("Failed to load stage results:", err);
     }
   }, []);
 
   useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
+    fetchResults();
+    const interval = setInterval(fetchResults, 3000);
+    return () => clearInterval(interval);
+  }, [fetchResults]);
 
-  const handleToggle = async (keyName: keyof typeof settings) => {
+  const handleToggleReveal = async () => {
     try {
-      setIsUpdating(true);
-      const updated = { ...settings, [keyName]: !settings[keyName] };
-      const res = await fetch("/api/admin/settings", {
-        method: "PATCH",
+      setIsToggling(true);
+      const res = await fetch("/api/admin/event/reveal", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: "BVTalent Show 2026",
-          ...updated,
-        }),
+        body: JSON.stringify({ resultsVisible: !resultsVisible }),
       });
-      if (res.ok) {
-        setSettings(updated);
-        setKey((prev) => prev + 1); // trigger reload of leaderboard
-      }
+      const data = await res.json();
+      setResultsVisible(data.resultsVisible);
+      if (data.resultsVisible) firePartyConfetti();
+      fetchResults();
     } catch (err) {
-      console.error("Update visibility error:", err);
+      console.error("Reveal toggle error:", err);
     } finally {
-      setIsUpdating(false);
+      setIsToggling(false);
     }
   };
 
+  const toggleFullscreen = () => {
+    if (!isFullscreen) {
+      if (containerRef.current?.requestFullscreen) {
+        containerRef.current.requestFullscreen().catch(() => {});
+      }
+      setIsFullscreen(true);
+    } else {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFs = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handleFs);
+    return () => document.removeEventListener("fullscreenchange", handleFs);
+  }, []);
+
   return (
-    <div className="space-y-6 pb-12">
-      {/* Top Banner with Quick Visibility Controls */}
-      <Card className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-party-neonPurple/40">
-        <div>
-          <h2 className="text-xl font-black text-white flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-party-gold" />
-            <span>Stage Leaderboard & Visibility Controls</span>
-          </h2>
-          <p className="text-xs text-gray-400 mt-0.5">
-            Decide what audience members and stage displays can see in real-time
-          </p>
+    <div
+      ref={containerRef}
+      className={
+        isFullscreen
+          ? "fixed inset-0 z-50 bg-party-bg bg-party-dots p-6 sm:p-12 overflow-y-auto"
+          : "space-y-6 pb-12"
+      }
+    >
+      {/* Top Controls Bar */}
+      <div className="bg-party-card border-3 border-black rounded-3xl p-5 shadow-cartoon flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-party-yellow border-2 border-black shadow-cartoon-sm flex items-center justify-center">
+            <Trophy className="w-6 h-6 text-party-pink fill-party-pink" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black text-white font-cartoon">
+                STAGE PROJECTOR DISPLAY
+              </h1>
+              <Badge status={status} className="text-[10px] px-2 py-0.5" />
+            </div>
+            <p className="text-xs text-gray-300 font-bold mt-0.5 flex items-center gap-2">
+              <Radio className="w-3.5 h-3.5 text-party-cyan animate-pulse" />
+              <span>{totalDevices} audience phones connected</span>
+            </p>
+          </div>
         </div>
 
-        {/* Quick Toggles */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           <Button
             size="sm"
-            variant={settings.showResults ? "primary" : "secondary"}
-            onClick={() => handleToggle("showResults")}
-            disabled={isUpdating}
-            className="text-xs shadow-none"
+            variant={resultsVisible ? "lime" : "pink"}
+            onClick={handleToggleReveal}
+            isLoading={isToggling}
+            className="text-xs font-black shadow-cartoon-sm"
           >
-            {settings.showResults ? (
-              <Eye className="w-3.5 h-3.5 mr-1" />
+            {resultsVisible ? (
+              <>
+                <EyeOff className="w-3.5 h-3.5 mr-1" />
+                <span>Hide Results</span>
+              </>
             ) : (
-              <EyeOff className="w-3.5 h-3.5 mr-1 text-gray-400" />
+              <>
+                <Eye className="w-3.5 h-3.5 mr-1" />
+                <span>Reveal Winner on Screen! 🎉</span>
+              </>
             )}
-            <span>Results: {settings.showResults ? "Public" : "Hidden"}</span>
           </Button>
 
           <Button
             size="sm"
-            variant={settings.showVoteCounts ? "cyan" : "secondary"}
-            onClick={() => handleToggle("showVoteCounts")}
-            disabled={isUpdating}
-            className="text-xs shadow-none"
+            variant="cyan"
+            onClick={toggleFullscreen}
+            className="text-xs font-black shadow-cartoon-sm"
           >
-            <Hash className="w-3.5 h-3.5 mr-1" />
-            <span>Counts: {settings.showVoteCounts ? "Visible" : "Pct Only"}</span>
-          </Button>
-
-          <Button
-            size="sm"
-            variant={settings.showLeaderboard ? "secondary" : "ghost"}
-            onClick={() => handleToggle("showLeaderboard")}
-            disabled={isUpdating}
-            className="text-xs border-party-border"
-          >
-            <Trophy className="w-3.5 h-3.5 mr-1 text-party-gold" />
-            <span>Ranks: {settings.showLeaderboard ? "Ranked" : "Unranked"}</span>
+            {isFullscreen ? (
+              <>
+                <Minimize2 className="w-3.5 h-3.5 mr-1" />
+                <span>Exit Fullscreen</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 className="w-3.5 h-3.5 mr-1" />
+                <span>Fullscreen Projector Mode</span>
+              </>
+            )}
           </Button>
         </div>
-      </Card>
+      </div>
 
-      {/* Embedded Live Leaderboard */}
-      <LiveLeaderboard key={key} />
+      {/* Main Screen Projection Content */}
+      <div className="space-y-6">
+        {/* Winner Highlight Card */}
+        {resultsVisible && winners.length > 0 && (
+          <div className="bg-party-yellow text-slate-950 border-4 border-black rounded-3xl p-6 sm:p-10 shadow-cartoon-xl text-center animate-in zoom-in-95">
+            <div className="inline-flex items-center gap-2 bg-party-pink text-white font-black text-xs sm:text-sm px-4 py-2 rounded-full border-2 border-black shadow-cartoon-sm mb-4 uppercase animate-bounce-subtle">
+              <Crown className="w-5 h-5 fill-current" />
+              <span>{isTie ? "IT'S A TIE! MULTIPLE CHAMPIONS!" : "TONIGHT'S TALENT CHAMPION!"}</span>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-6 my-4">
+              {winners.map((winner) => (
+                <div
+                  key={winner.teamId}
+                  className="bg-white border-4 border-black rounded-3xl p-5 shadow-cartoon flex flex-col items-center max-w-xs w-full"
+                >
+                  <div className="relative w-40 h-40 rounded-2xl overflow-hidden border-3 border-black mb-3">
+                    <Image
+                      src={winner.image}
+                      alt={winner.name}
+                      fill
+                      sizes="160px"
+                      className="object-cover"
+                    />
+                  </div>
+                  <h3 className="text-3xl font-black text-slate-950 font-cartoon">
+                    {winner.name}
+                  </h3>
+                  <div className="mt-2 inline-flex items-center gap-2 bg-party-yellow px-4 py-1.5 rounded-full border-2 border-black font-black text-sm">
+                    <Trophy className="w-4 h-4 text-party-pink fill-party-pink" />
+                    <span>
+                      {winner.votes} votes ({formatPercentage(winner.percentage)})
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Live Leaderboard Standings */}
+        <div className="bg-party-card border-3 border-black rounded-3xl p-6 shadow-cartoon space-y-4">
+          <h2 className="text-xl sm:text-2xl font-black text-white font-cartoon flex items-center gap-2">
+            <Medal className="w-6 h-6 text-party-cyan" />
+            <span>Leaderboard Standings</span>
+          </h2>
+
+          <div className="space-y-3">
+            {teams.map((team, index) => {
+              const rank = index + 1;
+              const isFirst = rank === 1 && team.votes > 0;
+
+              return (
+                <div
+                  key={team.teamId}
+                  className={`relative rounded-2xl border-3 border-black p-4 sm:p-5 transition-all overflow-hidden ${
+                    isFirst
+                      ? "bg-party-yellow text-slate-950 shadow-cartoon"
+                      : "bg-party-surface text-white"
+                  }`}
+                >
+                  <div
+                    className="absolute inset-y-0 left-0 bg-black/10 pointer-events-none transition-all duration-500"
+                    style={{ width: `${team.percentage}%` }}
+                  />
+
+                  <div className="relative flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div
+                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl border-2 border-black flex items-center justify-center font-black text-base sm:text-lg flex-shrink-0 ${
+                          isFirst
+                            ? "bg-party-pink text-white"
+                            : "bg-party-card text-party-yellow"
+                        }`}
+                      >
+                        #{rank}
+                      </div>
+
+                      <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border-2 border-black overflow-hidden flex-shrink-0">
+                        <Image
+                          src={team.image}
+                          alt={team.name}
+                          fill
+                          sizes="64px"
+                          className="object-cover"
+                        />
+                      </div>
+
+                      <div className="min-w-0">
+                        <h4 className="font-black text-lg sm:text-2xl truncate font-cartoon">
+                          {team.name}
+                        </h4>
+                        {isFirst && (
+                          <span className="text-xs font-black uppercase tracking-wider text-party-pink flex items-center gap-1">
+                            <Crown className="w-3.5 h-3.5 fill-current" /> Leader
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-right flex-shrink-0 font-black">
+                      <span className="font-mono text-xl sm:text-3xl block">
+                        {team.votes} <span className="text-xs font-bold uppercase">votes</span>
+                      </span>
+                      <span className="text-xs sm:text-sm font-bold text-gray-400 block">
+                        {formatPercentage(team.percentage)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,321 +1,255 @@
-# BVTalent — Full-Stack Talent Show Voting Platform
+# BVTalent — Fun Cartoon-Style Talent Show Voting Website 🎉
 
 [![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-18-blue?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-green?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/)
-[![Vitest](https://img.shields.io/badge/Tests-22%20Passed-brightgreen?style=for-the-badge&logo=vitest)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Tests-24%20Passed-brightgreen?style=for-the-badge&logo=vitest)](https://vitest.dev/)
 
-> **Core Principle: One eligible voter = one vote = one team.**
+> **"Watch the performances. Pick your champions. Change your mind. It's party time!"**
 
-BVTalent is a production-ready, digital voting web application designed for live talent shows, music festivals, dance competitions, and entertainment events. Built with an immersive party-style visual design (deep violet, neon pink, electric purple, cyan accents, stage lighting effects), the platform enables audience members to vote from their mobile phones in under 10 seconds while providing event organizers with real-time analytics, voter pass management, and stage projector display modes.
+BVTalent is a complete, fun cartoon-style web application designed for live talent show parties, open-mic nights, dance battles, and casual party competitions. 
 
----
-
-## Table of Contents
-
-- [Key Features](#key-features)
-- [Technology Stack](#technology-stack)
-- [Architecture & Security](#architecture--security)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Environment Variables](#environment-variables)
-  - [Running Locally](#running-locally)
-- [Testing](#testing)
-- [Event Operation Guide](#event-operation-guide)
-- [API Documentation](#api-documentation)
-- [Deployment to Vercel](#deployment-to-vercel)
+Designed like a colourful cartoon party game (bright yellow, neon pink, cyan, lime green, thick comic borders, bouncy buttons, and confetti), guests can vote directly from their phones without any registration, passwords, or tokens. Guests can change their vote as each new team takes the stage, and only their latest selection counts!
 
 ---
 
-## Key Features
+## 🎮 How the Party Voting Works
 
-### 🌟 Audience Voting Experience
-- **Mobile-First Party Theme:** High-energy dark aesthetic with cinematic stage glows, responsive typography, and large touch targets designed for smartphones scanning a QR code.
-- **Sub-10-Second Voting Flow:**
-  1. Audience taps **Vote Now** or scans event QR code.
-  2. Selects exactly one competing team.
-  3. Enters their unique, non-sequential voting code.
-  4. Reviews choice in a clear confirmation modal.
-  5. Submits and celebrates with confetti, team artwork, and thank-you confirmation.
-- **Real-Time State Awareness:** Automatically displays whether voting is Upcoming, Open, Paused, or Closed.
-
-### 🛡️ One Person = One Vote Security
-- **Cryptographic Randomness:** Voter codes are generated using high-entropy random characters (e.g. `BVT-8K4F-9W2M`), avoiding sequential predictability.
-- **HMAC-SHA256 Hashing:** Raw voter codes are never stored in the database. Only keyed HMAC-SHA256 hashes using a server-side pepper are persisted.
-- **Atomic Database Operations & Unique Indexes:** MongoDB unique indexes on `Vote.voterId` and atomic `findOneAndUpdate({ _id: voterId, hasVoted: false }, ...)` guarantee race-condition immunity. Two simultaneous requests with the same code cannot double-vote.
-- **Sliding-Window Rate Limiting:** Brute-force code guessing and API flooding are blocked at the server level.
-
-### 📊 Real-Time Analytics & Live Leaderboard
-- **Live Leaderboard:** Animated rank badges (Gold #1, Silver #2, Bronze #3), vote totals, percentage shares, and live progress bars.
-- **Stage Projector Fullscreen Mode:** One-click toggle that expands the leaderboard into high-contrast stage view for venue projectors or arena screens.
-- **Live Auto-Refresh Polling:** Real-time updates with pause/resume controls and visual pulse indicators.
-- **Recharts Analytics in Admin Portal:**
-  - **Vote Distribution:** Donut chart of team vote shares.
-  - **Activity Timeline:** Area chart of vote traffic over time with peak surge interval calculation.
-  - **Team Comparison:** Bar chart comparing total votes.
-  - **Participation Rate:** Real-time percentage of eligible passes redeemed.
-
-### 🎛️ Organizer & Admin Control Center
-- **Secure Authentication:** HttpOnly, Secure, SameSite JWT session cookies with bcrypt password hashing.
-- **Instant State Controls:** Open Voting, Pause Voting, Resume Voting, and Permanently Close Voting with confirmation dialogs.
-- **Pass Management:**
-  - Bulk generate 1 to 1,000 passes at a time.
-  - Plaintext codes revealed safely only once at generation time for organizer copying or `.txt` download.
-  - Disable or re-enable individual passes on the fly.
-  - Export all pass statuses as CSV for audit reconciliation.
-- **Team Roster Management:**
-  - Create, update, reorder, and activate/deactivate teams.
-  - Soft-deactivation / archiving when votes already exist to preserve historical audit integrity.
-- **Visibility Settings:** Toggle public results visibility, toggle raw counts (show percentages only to build suspense), and toggle rank numbers.
-- **Administrative Audit Trail:** Immutable log of all administrative actions, timestamps, and state transitions.
+1. **Open on Phone:** A guest opens BVTalent on their phone (or scans the event QR code).
+2. **Instant Device ID:** The website automatically assigns an anonymous `crypto.randomUUID()` saved in browser `localStorage`. No login, tokens, or registration!
+3. **Pick a Performer:** The guest taps their favourite team card. Their selection is immediately recorded!
+4. **Change Your Mind Anytime:** When another act performs and blows the crowd away, the guest simply taps that team. Their vote updates instantly.
+5. **1 Device = 1 Active Vote:** Only the latest selected team counts. Vote changes never inflate total voter counts.
+6. **Curtains Close & Winner Reveal:** The party host ends voting in the admin booth, locking all ballots, and reveals the champion with confetti and celebration animations!
 
 ---
 
-## Technology Stack
+## 🌈 Cartoon Party Theme & Visuals
+
+- **Aesthetic:** Comic pop & cartoon arcade party game style!
+- **Color Palette:**
+  - 🌟 Lemon Yellow (`#FFE600`)
+  - 💖 Neon Pink (`#FF2E93`)
+  - ⚡ Electric Cyan (`#00F0FF`)
+  - 🍏 Lime Green (`#22C55E`)
+  - 🍊 Bright Orange (`#FF6B00`)
+  - 💜 Bright Purple (`#9333EA`)
+- **UI Elements:**
+  - Thick 3px/4px black borders (`border-3 border-black`)
+  - Hard cartoon drop-shadows (`shadow-[4px_4px_0px_#000]`)
+  - Bouncy press animations (`active:translate-x-[2px] active:translate-y-[2px]`)
+  - Playful speech-bubble stickers and party star badges
+  - Funny messages:
+    - *"WHO'S GOT THE TALENT?!"*
+    - *"YOUR VOTE HAS LANDED! 🚀"*
+    - *"Team switched! Don't tell the others 😂"*
+    - *"AND THE WINNER IS..."*
+    - *"IT'S A TIE! Multiple champions sharing the crown! 🤝👑"*
+
+---
+
+## 🛠️ Technology Stack
 
 | Layer | Technologies |
 | :--- | :--- |
-| **Framework** | [Next.js 14 (App Router)](https://nextjs.org/) |
-| **Frontend** | React 18, TypeScript, Tailwind CSS, Lucide React, Canvas Confetti |
-| **Charts & Analytics** | [Recharts](https://recharts.org/) |
+| **Framework** | Next.js 14 App Router (Single application, no separate Express backend) |
+| **Frontend** | React 18, TypeScript, Tailwind CSS, Lucide React, Canvas Confetti, Framer Motion |
+| **Analytics** | Recharts (Responsive bar chart of live device votes) |
 | **Backend** | Next.js Route Handlers (`src/app/api/**/route.ts`) |
-| **Validation** | [Zod](https://zod.dev/) |
-| **Database** | [MongoDB](https://www.mongodb.com/) via [Mongoose](https://mongoosejs.com/) |
-| **Security & Auth** | JWT (`jsonwebtoken`), bcrypt (`bcryptjs`), HMAC-SHA256 (`crypto`) |
-| **Testing** | [Vitest](https://vitest.dev/) |
+| **Validation** | Zod schemas |
+| **Database** | MongoDB via Mongoose (Single `DeviceVote` collection with atomic upsert) |
+| **Security** | Keyed HMAC-SHA256 device hashing (`DEVICE_HASH_SECRET`), bcrypt admin auth, HttpOnly JWT cookies |
+| **Testing** | Vitest (24 automated unit & integration tests) |
 
 ---
 
-## Architecture & Security
+## 🗄️ Database & Voting Logic
 
-```
-Audience Member (Mobile Browser / QR)
-       │
-       ▼
-   POST /api/votes
-       │
-       ├── 1. Rate Limiting (IP Sliding Window)
-       ├── 2. Zod Schema Validation
-       ├── 3. Event State Check (Status == "OPEN")
-       ├── 4. Team Active Check
-       ├── 5. HMAC-SHA256 Voter Code Hash Computation
-       ├── 6. Atomic MongoDB Voter State Transition ({ hasVoted: false } -> { hasVoted: true })
-       ├── 7. Vote Insert with Unique Index on voterId
-       └── 8. Success Response (Confetti & Confirmation)
-```
+### Models
+
+1. **`Event` Model:**
+   - `name`: string
+   - `description`: string
+   - `status`: `"upcoming" | "open" | "closed"`
+   - `resultsVisible`: boolean
+   - `winnerTeamId`: ObjectId (ref: Team)
+2. **`Team` Model:**
+   - `name`: string
+   - `description`: string
+   - `image`: string
+   - `color`: `"yellow" | "pink" | "cyan" | "lime" | "purple" | "orange"`
+3. **`DeviceVote` Model:**
+   - `deviceIdHash`: string (HMAC-SHA256, unique index)
+   - `currentTeamId`: ObjectId (ref: Team)
+   - `timestamps`: true
+
+### Atomic Voting Operation
+
+When a guest votes (`PUT /api/voting/me`):
+1. Verifies event status is `open` (rejects if `upcoming` or `closed`).
+2. Verifies `teamId` exists.
+3. Hashes the browser `deviceId` using server-side `DEVICE_HASH_SECRET`.
+4. Executes atomic upsert:
+   ```ts
+   await DeviceVote.findOneAndUpdate(
+     { deviceIdHash },
+     {
+       $set: { currentTeamId: teamId, updatedAt: new Date() },
+       $setOnInsert: { createdAt: new Date() },
+     },
+     { upsert: true, new: true }
+   );
+   ```
+5. Exact 1 vote per device. No duplicates. Concurrency safe.
 
 ---
 
-## Project Structure
+## 📱 Project Structure
 
 ```text
-bvtalent/
-├── public/
-├── src/
-│   ├── app/
-│   │   ├── (public)/
-│   │   │   ├── page.tsx            # Public Landing Page & Contestants Preview
-│   │   │   ├── vote/page.tsx       # Live Voting Experience
-│   │   │   ├── results/page.tsx    # Public Stage Leaderboard
-│   │   │   └── layout.tsx          # Public Layout with Navigation & Footer
-│   │   ├── admin/
-│   │   │   ├── login/page.tsx      # Admin Authentication Page
-│   │   │   ├── dashboard/page.tsx  # Analytics & Event Control Center
-│   │   │   ├── teams/page.tsx      # Teams CRUD & Roster Management
-│   │   │   ├── voters/page.tsx     # Voter Pass Generation & Export
-│   │   │   ├── results/page.tsx    # Live Leaderboard & Visibility Toggles
-│   │   │   ├── settings/page.tsx   # Event Config & Audit Log
-│   │   │   └── layout.tsx          # Protected Admin Shell & Sidebar
-│   │   ├── api/
-│   │   │   ├── event/              # Event Info & Status
-│   │   │   ├── teams/              # Active Teams List
-│   │   │   ├── votes/              # Atomic Vote Processing
-│   │   │   ├── results/            # Sanitized Live Results
-│   │   │   ├── voter/              # Pass Pre-validation
-│   │   │   └── admin/              # Auth, Teams, Voters, Voting, Analytics, Settings
-│   │   ├── globals.css             # Party Theme & Glow Styles
-│   │   ├── layout.tsx              # Root HTML & Metadata Shell
-│   │   └── not-found.tsx           # Custom 404 Page
-│   │
-│   ├── components/
-│   │   ├── ui/                     # Button, Input, Card, Modal, Badge
-│   │   ├── layout/                 # Navbar, Footer, AdminSidebar, AdminHeader
-│   │   ├── landing/                # HeroSection, EventCountdown, HowItWorks
-│   │   ├── voting/                 # VotingFlow, ConfirmationModal, SuccessScreen, Confetti
-│   │   ├── teams/                  # TeamCard, TeamGrid
-│   │   ├── leaderboard/            # LiveLeaderboard, LeaderboardRow
-│   │   ├── admin/                  # StatCard, ConfirmDialog, VotingControls
-│   │   └── analytics/              # VoteDistributionChart, VoteActivityChart, TeamComparisonChart
-│   │
-│   ├── models/                     # Mongoose Models (Team, Voter, Vote, Event, Admin, AuditLog)
-│   ├── lib/                        # mongodb, auth, security, validations, analytics, bootstrap
-│   ├── types/                      # TypeScript Interfaces
-│   └── tests/                      # Vitest Suites
-│
-├── .env.example
-├── vitest.config.ts
-├── tailwind.config.ts
-└── package.json
+src/
+  app/
+    (public)/
+      page.tsx            # Cartoon Landing Page ("WHO'S GOT THE TALENT?!")
+      vote/page.tsx       # Main Guest Voting Page (Character Cards & Confetti)
+      results/page.tsx    # Winner Announcement & Live Leaderboard
+      layout.tsx          # Cartoon Navbar & Footer
+    admin/
+      login/page.tsx      # Organizer Booth Login
+      page.tsx            # Redirect to Dashboard
+      dashboard/page.tsx  # Host Control Center (Start/End Voting, Reveal, Charts)
+      teams/page.tsx      # Add/Edit/Delete Performing Acts
+      results/page.tsx    # Projector Screen Stage Mode
+      layout.tsx          # Protected Admin Shell & Session Guard
+    api/
+      event/route.ts      # Event metadata & status
+      teams/route.ts      # Participating teams
+      voting/me/route.ts  # Device vote status (GET) & Atomic Vote/Switch (PUT)
+      results/route.ts    # Public stage results (controlled by reveal toggle)
+      admin/
+        auth/login/route.ts
+        auth/logout/route.ts
+        auth/session/route.ts
+        teams/route.ts
+        teams/[id]/route.ts
+        event/status/route.ts # Start / End Voting
+        event/reveal/route.ts # Reveal Winner Toggle
+        results/route.ts      # Live Host Analytics
+  components/
+    ui/                   # Button, Card, Badge, Modal, Input
+    layout/               # Navbar, Footer
+    teams/                # CartoonTeamCard
+    voting/               # CartoonVotingGrid, Confetti
+  lib/
+    mongodb.ts            # Mongoose connection cache
+    device.ts             # SSR-safe getDeviceId()
+    security.ts           # HMAC-SHA256 device hashing & rate limiter
+    voting.ts             # castOrUpdateDeviceVote()
+    results.ts            # calculateLiveResults() & tie detection
+    validations.ts        # Zod schemas
+    bootstrap.ts          # Default event, admin, & cartoon acts
+  models/
+    Event.ts, Team.ts, DeviceVote.ts, Admin.ts
+  types/
+    index.ts
+  tests/
+    device_security.test.ts
+    party_voting.test.ts
+    validations.test.ts
+    auth.test.ts
 ```
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
-### Prerequisites
+### 1. Prerequisites
 - Node.js `v18+` or `v20+`
-- MongoDB `v6.0+` (local instance or [MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
+- MongoDB `v6.0+` (local instance or MongoDB Atlas)
 
-### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-org/bvtalent.git
-   cd bvtalent
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-### Environment Variables
+### 2. Configure Environment Variables
 Copy `.env.example` to `.env.local`:
 ```bash
 cp .env.example .env.local
 ```
 
-Configure your environment values:
+Settings in `.env.local`:
 ```env
-# MongoDB Connection String (MongoDB Atlas or local)
 MONGODB_URI=mongodb://localhost:27017/bvtalent
-
-# JWT and Admin Session Secret (min 32 characters)
-AUTH_SECRET=bvtalent_super_secret_jwt_key_at_least_32_chars_long
-
-# Cryptographic Pepper for Voter Code Hashing (HMAC secret, min 32 characters)
-VOTER_CODE_PEPPER=bvtalent_voter_code_secret_pepper_value_min_32_chars
-
-# Public URL
-APP_URL=http://localhost:3000
-
-# Initial Admin Bootstrap Credentials
-INITIAL_ADMIN_USERNAME=admin
+ADMIN_USERNAME=admin
 INITIAL_ADMIN_PASSWORD=AdminTalent2026!
+ADMIN_SESSION_SECRET=bvtalent_dev_super_secret_jwt_key_at_least_32_characters_minimum!
+DEVICE_HASH_SECRET=bvtalent_dev_device_hash_secret_at_least_32_characters_minimum!
+APP_URL=http://localhost:3000
 ```
 
-### Automatic Bootstrap
-On first launch, BVTalent automatically initializes:
-1. Default Event Configuration (`BVTalent Show 2026`).
-2. Default Superadmin account (`admin` with password from `INITIAL_ADMIN_PASSWORD`).
-3. Showcase contestant acts if the roster is empty.
-
-### Running Locally
+### 3. Run Development Server
 ```bash
-# Run Development Server
 npm run dev
-
-# Run Production Build
-npm run build
-npm start
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### 4. Admin Credentials
+- **Login URL:** [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
+- **Username:** `admin`
+- **Password:** `AdminTalent2026!`
+
 ---
 
-## Testing
+## 🧪 Testing
 
 Run the automated test suite with Vitest:
 ```bash
 npm test
 ```
-The test suite validates:
-- Cryptographic voter code generation and formatting.
-- HMAC-SHA256 normalization and collision resistance.
-- Sliding-window rate limiting.
-- Zod schema validation rules.
-- Password hashing and JWT session handling.
-- Voting state enforcement (Upcoming, Open, Paused, Closed).
-- Concurrency simulation ensuring two simultaneous requests cannot use the same pass.
-- Analytics percentage and participation rate math.
+
+### Verified Test Suites (24 passing tests):
+- ✅ **Device Identification & Security:** UUID validation, HMAC-SHA256 deterministic hashing, non-UUID rejection, rate limiting.
+- ✅ **Party Voting Engine & Integrity:**
+  - New device votes successfully.
+  - Same device changes vote without increasing total voter count.
+  - Multiple devices vote independently.
+  - Voting rejected when status is `upcoming`.
+  - Voting rejected when status is `closed`.
+  - Rejection of invalid team IDs.
+  - Automatic tie detection without arbitrarily picking a single winner.
+  - Accurate percentage calculation.
+- ✅ **Zod Schema Validations:** UUID deviceId format, 24-char ObjectId teamId, admin credentials, team data, event status.
+- ✅ **Admin Authentication:** Password hashing with bcrypt, JWT session signing, token tampering rejection.
 
 ---
 
-## Event Operation Guide
+## 🎤 Party Host Operational Guide
 
-### 1. Before the Show
-1. Sign in to the Organizer Portal at `/admin/login`.
-2. Review participating acts in **Teams Roster** (`/admin/teams`). Add photos and descriptions.
-3. Generate voting passes in **Voter Passes** (`/admin/voters`). Click **Generate Passes**, enter the expected attendance (e.g. 250), copy the generated codes or export to CSV.
-4. Print or distribute the codes on event seat flyers or QR cards.
-5. In **Event Settings** (`/admin/settings`), set the show start time.
-
-### 2. During the Show
-1. Keep voting in **UPCOMING** or **PAUSED** mode while acts perform.
-2. When performances conclude, click **Open Voting** on the Dashboard (`/admin/dashboard`).
-3. Display the live leaderboard on the venue projector at `/results` and press **Stage Projector** for fullscreen display.
-4. If organizers need to deliver announcements or pause voting, click **Pause Voting**.
-5. When the countdown ends, click **Close Permanently** to lock in the final votes.
-
-### 3. Announcing the Winner
-1. Review the final audited numbers in **Live Stage Results** (`/admin/results`).
-2. If vote counts were hidden to maintain suspense, toggle **Counts: Visible** to reveal total ballots cast.
-3. Crown the winner!
+1. **Before the Party:**
+   - Log in at `/admin/login`.
+   - Go to **Teams Roster** (`/admin/teams`) and add the acts performing tonight.
+   - Leave voting in **Upcoming** or **Open**.
+2. **During the Show:**
+   - Guests scan the QR code and land on `/vote`.
+   - Guests tap their favourite team as they watch the performances.
+   - If another act impresses them later, they tap the new team to switch their vote!
+   - The host watches the live vote counts and bar chart on the **Live Dashboard** (`/admin/dashboard`).
+3. **Closing Voting & Crowning the Winner:**
+   - Click **End Voting (Lock Votes)** on the dashboard.
+   - The server locks all votes—no more changes are allowed.
+   - Open `/admin/results` on the projector or stage screen.
+   - Click **Reveal Winner on Screen! 🎉**
+   - The stage screen blasts confetti and crowns the winning act (or displays a tie if votes are equal)!
 
 ---
 
-## API Documentation
+## 🚢 Deployment to Vercel
 
-### Public Endpoints
-- `GET /api/event`: Event metadata and voting status.
-- `GET /api/teams`: List of all active competing acts.
-- `POST /api/votes`: Submit a ballot (`{ voterCode: string, teamId: string }`).
-- `GET /api/results`: Public stage results (sanitized according to visibility settings).
-- `POST /api/voter`: Check if a voting pass code is valid and unused.
-
-### Admin Endpoints (Protected by JWT Session Cookie)
-- `POST /api/admin/auth/login`: Administrator login.
-- `POST /api/admin/auth/logout`: Administrator logout.
-- `GET /api/admin/auth/session`: Current admin session user.
-- `GET /api/admin/teams`: Roster with live vote totals.
-- `POST /api/admin/teams`: Create new act.
-- `PATCH /api/admin/teams/:id`: Update act details or display order.
-- `DELETE /api/admin/teams/:id`: Delete or soft-archive act.
-- `GET /api/admin/voters`: List passes with pagination and status filters.
-- `POST /api/admin/voters/generate`: Generate random voter codes.
-- `PATCH /api/admin/voters/:id`: Enable or disable a pass.
-- `GET /api/admin/voters/export`: Download passes status as CSV.
-- `POST /api/admin/voting/open`: Open voting.
-- `POST /api/admin/voting/pause`: Pause voting.
-- `POST /api/admin/voting/resume`: Resume voting.
-- `POST /api/admin/voting/close`: Close voting permanently.
-- `GET /api/admin/analytics/overview`: High-level KPIs.
-- `GET /api/admin/analytics/teams`: Team vote distribution.
-- `GET /api/admin/analytics/activity`: Activity timeline buckets.
-- `GET /api/admin/analytics/participation`: Pass usage ratios.
-- `GET /api/admin/settings`: Settings and audit logs.
-- `PATCH /api/admin/settings`: Update event settings.
-
----
-
-## Deployment to Vercel
-
-1. Push your repository to GitHub, GitLab, or Bitbucket.
-2. Import the project into [Vercel](https://vercel.com).
-3. Set the following Environment Variables in Vercel Project Settings:
-   - `MONGODB_URI`: Your MongoDB Atlas connection URI.
-   - `AUTH_SECRET`: Random 32+ character string.
-   - `VOTER_CODE_PEPPER`: Random 32+ character string.
-   - `APP_URL`: Your Vercel production URL (e.g., `https://bvtalent.vercel.app`).
-   - `INITIAL_ADMIN_USERNAME`: `admin`
-   - `INITIAL_ADMIN_PASSWORD`: A strong initial password.
-4. Click **Deploy**. Vercel will build and deploy the Next.js App Router application.
-
----
-
-## License
-
-This project is proprietary software for BVTalent event productions.
+1. Push your repository to GitHub.
+2. Import into [Vercel](https://vercel.com).
+3. In Project Settings > Environment Variables, add:
+   - `MONGODB_URI`
+   - `ADMIN_USERNAME`
+   - `INITIAL_ADMIN_PASSWORD`
+   - `ADMIN_SESSION_SECRET`
+   - `DEVICE_HASH_SECRET`
+   - `APP_URL`
+4. Deploy!

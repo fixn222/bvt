@@ -21,8 +21,7 @@ describe("Admin Authentication & Security Tests", () => {
     const user: IAdminUser = {
       id: "admin-id-123",
       username: "chief_judge",
-      email: "judge@bvtalent.local",
-      role: "superadmin",
+      role: "admin",
     };
 
     const token = signAdminToken(user);

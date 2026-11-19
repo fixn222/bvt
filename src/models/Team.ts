@@ -2,12 +2,9 @@ import mongoose, { Schema, Model, Document } from "mongoose";
 
 export interface ITeamDocument extends Document {
   name: string;
-  slug: string;
   description: string;
   image: string;
-  members: string[];
-  isActive: boolean;
-  displayOrder: number;
+  color: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,35 +17,18 @@ const TeamSchema = new Schema<ITeamDocument>(
       trim: true,
       maxlength: 100,
     },
-    slug: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true,
-    },
     description: {
       type: String,
       default: "",
-      maxlength: 1000,
+      maxlength: 500,
     },
     image: {
       type: String,
       required: true,
     },
-    members: {
-      type: [String],
-      default: [],
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-      index: true,
-    },
-    displayOrder: {
-      type: Number,
-      default: 0,
-      index: true,
+    color: {
+      type: String,
+      default: "yellow", // yellow, pink, cyan, lime, purple, orange
     },
   },
   {

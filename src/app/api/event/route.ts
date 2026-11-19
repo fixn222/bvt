@@ -11,7 +11,6 @@ export async function GET() {
     await ensureInitialData();
 
     const eventDoc = await EventModel.findOne().lean();
-
     if (!eventDoc) {
       return NextResponse.json(
         { error: "Event configuration not found" },
@@ -22,14 +21,9 @@ export async function GET() {
     return NextResponse.json({
       name: eventDoc.name,
       description: eventDoc.description,
-      eventDate: eventDoc.eventDate,
       status: eventDoc.status,
-      votingOpen: eventDoc.votingOpen,
-      votingPaused: eventDoc.votingPaused,
-      votingClosed: eventDoc.votingClosed,
-      showResults: eventDoc.showResults,
-      showVoteCounts: eventDoc.showVoteCounts,
-      showLeaderboard: eventDoc.showLeaderboard,
+      resultsVisible: !!eventDoc.resultsVisible,
+      winnerTeamId: eventDoc.winnerTeamId ? eventDoc.winnerTeamId.toString() : null,
     });
   } catch (error) {
     console.error("GET /api/event error:", error);

@@ -18,6 +18,6 @@ export function formatDateTime(date: string | Date | null | undefined): string {
 }
 
 export function formatPercentage(val: number, precision: number = 1): string {
-  if (isNaN(val)) return "0.0%";
+  if (typeof val !== "number" || isNaN(val) || !isFinite(val)) return "0.0%";
   return `${val.toFixed(precision)}%`;
 }

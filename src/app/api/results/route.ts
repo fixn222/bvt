@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { EventModel } from "@/models/Event";
-import { getTeamsLeaderboard } from "@/lib/analytics";
+import { calculateLiveResults } from "@/lib/results";
 
 export const dynamic = "force-dynamic";
 
@@ -17,42 +17,30 @@ export async function GET() {
       );
     }
 
-    if (!eventDoc.showResults) {
+    if (!eventDoc.resultsVisible) {
       return NextResponse.json({
-        showResults: false,
-        message: "Live results are currently hidden by event organizers.",
+        resultsVisible: false,
         status: eventDoc.status,
+        message: "SHHH! The crowd's votes are being tallied! Results will be revealed on stage soon! 🤫✨",
       });
     }
 
-    const leaderboard = await getTeamsLeaderboard();
-
-    // Sanitize if showVoteCounts is false
-    const sanitizedLeaderboard = leaderboard.map((item) => ({
-      rank: eventDoc.showLeaderboard ? item.rank : undefined,
-      teamId: item.teamId,
-      name: item.name,
-      slug: item.slug,
-      image: item.image,
-      description: item.description,
-      voteShare: item.voteShare,
-      votes: eventDoc.showVoteCounts ? item.votes : undefined,
-      diffFromPrev: eventDoc.showVoteCounts ? item.diffFromPrev : undefined,
-    }));
+    const results = await calculateLiveResults();
 
     return NextResponse.json({
-      showResults: true,
-      showVoteCounts: eventDoc.showVoteCounts,
-      showLeaderboard: eventDoc.showLeaderboard,
-      status: eventDoc.status,
-      eventName: eventDoc.name,
+      success: true,
+      resultsVisible: true,
+      status: results.status,
+      totalDevices: results.totalDevices,
+      teams: results.teams,
+      winners: results.winners,
+      isTie: results.isTie,
       updatedAt: new Date().toISOString(),
-      teams: sanitizedLeaderboard,
     });
   } catch (error) {
     console.error("GET /api/results error:", error);
     return NextResponse.json(
-      { error: "Failed to retrieve live results" },
+      { error: "Failed to retrieve results" },
       { status: 500 }
     );
   }

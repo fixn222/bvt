@@ -1,17 +1,12 @@
-import mongoose, { Schema, Model, Document } from "mongoose";
+import mongoose, { Schema, Model, Document, Types } from "mongoose";
 import { VotingStatus } from "@/types";
 
 export interface IEventDocument extends Document {
   name: string;
   description: string;
-  eventDate: Date | null;
   status: VotingStatus;
-  votingOpen: boolean;
-  votingPaused: boolean;
-  votingClosed: boolean;
-  showResults: boolean;
-  showVoteCounts: boolean;
-  showLeaderboard: boolean;
+  resultsVisible: boolean;
+  winnerTeamId?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,45 +16,26 @@ const EventSchema = new Schema<IEventDocument>(
     name: {
       type: String,
       required: true,
-      default: "BVTalent Show 2026",
+      default: "BVTalent Showdown!",
       trim: true,
     },
     description: {
       type: String,
-      default: "The Ultimate Live Talent & Performance Showcase. Every vote counts!",
-    },
-    eventDate: {
-      type: Date,
-      default: null,
+      default: "Watch the performances. Pick your champions. Change your mind. It's party time!",
     },
     status: {
       type: String,
-      enum: ["UPCOMING", "OPEN", "PAUSED", "CLOSED"],
-      default: "OPEN",
+      enum: ["upcoming", "open", "closed"],
+      default: "open",
     },
-    votingOpen: {
-      type: Boolean,
-      default: true,
-    },
-    votingPaused: {
+    resultsVisible: {
       type: Boolean,
       default: false,
     },
-    votingClosed: {
-      type: Boolean,
-      default: false,
-    },
-    showResults: {
-      type: Boolean,
-      default: true,
-    },
-    showVoteCounts: {
-      type: Boolean,
-      default: true,
-    },
-    showLeaderboard: {
-      type: Boolean,
-      default: true,
+    winnerTeamId: {
+      type: Schema.Types.ObjectId,
+      ref: "Team",
+      default: null,
     },
   },
   {

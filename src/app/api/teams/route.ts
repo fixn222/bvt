@@ -10,14 +10,13 @@ export async function GET() {
     await connectToDatabase();
     await ensureInitialData();
 
-    const teams = await Team.find({ isActive: true })
-      .sort({ displayOrder: 1, name: 1 })
-      .select("_id name slug description image members displayOrder")
+    const teams = await Team.find()
+      .sort({ createdAt: 1 })
+      .select("_id name description image color")
       .lean();
 
     return NextResponse.json({
       success: true,
-      count: teams.length,
       teams,
     });
   } catch (error) {

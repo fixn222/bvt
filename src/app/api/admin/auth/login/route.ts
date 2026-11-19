@@ -9,12 +9,20 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid JSON request body" },
+        { status: 400 }
+      );
+    }
     const validation = adminLoginSchema.safeParse(body);
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0]?.message || "Invalid login credentials" },
+        { error: validation.error.errors[0]?.message || "Invalid credentials format" },
         { status: 400 }
       );
     }
@@ -46,8 +54,7 @@ export async function POST(req: NextRequest) {
     const userPayload = {
       id: admin._id.toString(),
       username: admin.username,
-      email: admin.email,
-      role: admin.role,
+      role: "admin" as const,
     };
 
     const token = signAdminToken(userPayload);

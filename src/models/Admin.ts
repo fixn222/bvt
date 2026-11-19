@@ -3,8 +3,6 @@ import mongoose, { Schema, Model, Document } from "mongoose";
 export interface IAdminDocument extends Document {
   username: string;
   passwordHash: string;
-  email?: string;
-  role: "superadmin" | "admin";
   lastLogin: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -23,17 +21,6 @@ const AdminSchema = new Schema<IAdminDocument>(
     passwordHash: {
       type: String,
       required: true,
-    },
-    email: {
-      type: String,
-      default: "",
-      trim: true,
-      lowercase: true,
-    },
-    role: {
-      type: String,
-      enum: ["superadmin", "admin"],
-      default: "admin",
     },
     lastLogin: {
       type: Date,

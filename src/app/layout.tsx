@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -8,6 +8,18 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.ico",
   },
+  appleWebApp: {
+    capable: true,
+    title: "BVTalent",
+    statusBarStyle: "black-translucent",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#130924",
 };
 
 export default function RootLayout({
@@ -17,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-party-dark text-slate-100 antialiased min-h-screen flex flex-col selection:bg-party-neonPink selection:text-white">
+      <body className="bg-party-bg text-slate-100 antialiased min-h-screen flex flex-col selection:bg-party-pink selection:text-white">
         {children}
       </body>
     </html>

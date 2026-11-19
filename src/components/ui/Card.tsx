@@ -2,29 +2,27 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  glow?: "none" | "purple" | "pink" | "cyan" | "gold";
-  glass?: boolean;
+  color?: "default" | "yellow" | "pink" | "cyan" | "purple" | "lime" | "orange";
 }
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, glow = "none", glass = true, children, ...props }, ref) => {
-    const glowClasses = {
-      none: "border-party-border/60",
-      purple: "border-party-neonPurple/50 shadow-glow",
-      pink: "border-party-neonPink/50 shadow-glow-pink",
-      cyan: "border-party-neonCyan/50 shadow-glow-cyan",
-      gold: "border-party-gold/50 shadow-glow-gold",
+  ({ className, color = "default", children, ...props }, ref) => {
+    const colorClasses = {
+      default: "bg-party-card border-party-border shadow-cartoon-lg",
+      yellow: "bg-party-yellow text-slate-950 border-black shadow-cartoon-lg",
+      pink: "bg-party-pink text-white border-black shadow-cartoon-lg",
+      cyan: "bg-party-cyan text-slate-950 border-black shadow-cartoon-lg",
+      purple: "bg-party-purple text-white border-black shadow-cartoon-lg",
+      lime: "bg-party-lime text-slate-950 border-black shadow-cartoon-lg",
+      orange: "bg-party-orange text-white border-black shadow-cartoon-lg",
     };
 
     return (
       <div
         ref={ref}
         className={cn(
-          "rounded-2xl transition-all duration-300",
-          glass
-            ? "bg-party-card/80 backdrop-blur-md border"
-            : "bg-party-card border",
-          glowClasses[glow],
+          "rounded-3xl border-3 transition-all duration-200",
+          colorClasses[color],
           className
         )}
         {...props}

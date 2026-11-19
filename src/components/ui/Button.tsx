@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "danger" | "ghost" | "cyan";
+  variant?: "yellow" | "pink" | "cyan" | "purple" | "lime" | "orange" | "white" | "ghost";
   size?: "sm" | "md" | "lg" | "xl";
   isLoading?: boolean;
 }
@@ -13,48 +13,47 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       className,
-      variant = "primary",
+      variant = "yellow",
       size = "md",
       isLoading = false,
       disabled,
+      type = "button",
       children,
       ...props
     },
     ref
   ) => {
     const baseStyles =
-      "relative inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 select-none disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none active:scale-[0.98]";
+      "pressable relative inline-flex items-center justify-center font-black rounded-2xl border-3 border-black uppercase tracking-wider select-none touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none transition-all duration-150";
 
     const sizeStyles = {
-      sm: "text-xs px-3 py-1.5 gap-1.5",
-      md: "text-sm px-4 py-2.5 gap-2",
-      lg: "text-base px-6 py-3.5 gap-2.5",
-      xl: "text-lg px-8 py-4 gap-3 font-bold",
+      sm: "text-xs px-3.5 py-2 min-h-11 gap-1.5 shadow-cartoon-sm",
+      md: "text-sm px-5 py-2.5 min-h-11 gap-2 shadow-cartoon",
+      lg: "text-base px-6 sm:px-7 py-3.5 min-h-12 gap-2.5 shadow-cartoon-lg",
+      xl: "text-base sm:text-lg px-6 sm:px-8 py-4 min-h-14 gap-3 shadow-cartoon-lg font-black",
     };
 
     const variantStyles = {
-      primary:
-        "bg-gradient-to-r from-party-neonPink via-purple-600 to-party-neonPurple text-white shadow-glow hover:shadow-glow-pink hover:brightness-110 border border-pink-400/30",
-      secondary:
-        "bg-party-surface hover:bg-party-border text-white border border-party-border hover:border-party-neonPurple/50 shadow-md",
-      outline:
-        "bg-transparent border border-party-neonPurple/60 text-purple-200 hover:bg-party-neonPurple/10 hover:border-party-neonPurple",
-      danger:
-        "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md hover:from-red-500 hover:to-rose-600 border border-red-500/30",
+      yellow: "bg-party-yellow text-slate-950 hover:bg-yellow-300",
+      pink: "bg-party-pink text-white hover:bg-pink-400",
+      cyan: "bg-party-cyan text-slate-950 hover:bg-cyan-300",
+      purple: "bg-party-purple text-white hover:bg-purple-500",
+      lime: "bg-party-lime text-slate-950 hover:bg-lime-300",
+      orange: "bg-party-orange text-white hover:bg-orange-400",
+      white: "bg-white text-slate-950 hover:bg-gray-100",
       ghost:
-        "bg-transparent text-gray-300 hover:text-white hover:bg-white/5",
-      cyan:
-        "bg-gradient-to-r from-party-neonCyan to-cyan-600 text-slate-950 font-bold shadow-glow-cyan hover:brightness-110 border border-cyan-300/40",
+        "bg-transparent text-gray-200 border-transparent shadow-none hover:bg-white/10",
     };
 
     return (
       <button
         ref={ref}
+        type={type}
         disabled={disabled || isLoading}
         className={cn(baseStyles, sizeStyles[size], variantStyles[variant], className)}
         {...props}
       >
-        {isLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+        {isLoading && <Loader2 className="w-4 h-4 animate-spin mr-1.5" />}
         {children}
       </button>
     );
