@@ -11,8 +11,11 @@ import {
   Edit2,
   Trash2,
   Sparkles,
-  Flame,
   AlertCircle,
+  Mic2,
+  CheckCircle2,
+  Clock,
+  Radio,
 } from "lucide-react";
 import { ITeam } from "@/types";
 
@@ -27,6 +30,8 @@ export default function AdminTeamsPage() {
   const [description, setDescription] = useState("");
   const [image, setImage] = useState("");
   const [color, setColor] = useState("yellow");
+  const [performanceOrder, setPerformanceOrder] = useState<number>(1);
+  const [hasPerformed, setHasPerformed] = useState<boolean>(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,6 +64,8 @@ export default function AdminTeamsPage() {
     setDescription("");
     setImage("https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=80");
     setColor("yellow");
+    setPerformanceOrder(teams.length + 1);
+    setHasPerformed(false);
     setFormError(null);
     setIsModalOpen(true);
   };
@@ -69,6 +76,8 @@ export default function AdminTeamsPage() {
     setDescription(team.description || "");
     setImage(team.image);
     setColor(team.color || "yellow");
+    setPerformanceOrder(team.performanceOrder ?? 0);
+    setHasPerformed(!!team.hasPerformed);
     setFormError(null);
     setIsModalOpen(true);
   };
@@ -94,6 +103,8 @@ export default function AdminTeamsPage() {
         description: description.trim(),
         image: image.trim(),
         color,
+        performanceOrder: Number(performanceOrder) || 0,
+        hasPerformed: Boolean(hasPerformed),
       };
 
       const url = editingTeam
@@ -120,6 +131,33 @@ export default function AdminTeamsPage() {
       setFormError("Network error. Try again!");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleTogglePerformed = async (team: ITeam) => {
+    try {
+      const res = await fetch(`/api/admin/teams/${team._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hasPerformed: !team.hasPerformed }),
+      });
+      if (res.ok) fetchTeams();
+    } catch (err) {
+      console.error("Toggle performed error:", err);
+    }
+  };
+
+  const handleToggleStage = async (team: ITeam) => {
+    try {
+      const nextId = team.isPerforming ? null : team._id;
+      const res = await fetch("/api/admin/event/performing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId: nextId }),
+      });
+      if (res.ok) fetchTeams();
+    } catch (err) {
+      console.error("Toggle stage error:", err);
     }
   };
 
@@ -159,7 +197,7 @@ export default function AdminTeamsPage() {
             <span>TEAMS ROSTER</span>
           </h1>
           <p className="text-xs text-gray-300 font-bold mt-1">
-            Add performing acts, update descriptions, and manage team colors
+            Add performing acts, manage performance order, set live stage performers, and update themes
           </p>
         </div>
 
@@ -202,7 +240,11 @@ export default function AdminTeamsPage() {
           {teams.map((team) => (
             <div
               key={team._id}
-              className="bg-party-card border-3 border-black rounded-3xl shadow-cartoon overflow-hidden flex flex-col justify-between"
+              className={`bg-party-card border-3 rounded-3xl shadow-cartoon overflow-hidden flex flex-col justify-between transition-all ${
+                team.isPerforming
+                  ? "border-party-cyan ring-4 ring-party-cyan/50 shadow-cartoon-cyan"
+                  : "border-black"
+              }`}
             >
               <div>
                 <div className="relative w-full h-44 bg-party-bg border-b-3 border-black">
@@ -220,6 +262,28 @@ export default function AdminTeamsPage() {
                     </div>
                   )}
 
+                  {/* Top-left Badges */}
+                  <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
+                    <span className="bg-black/85 text-white font-black text-[10px] px-2.5 py-1 rounded-full border border-white/30 backdrop-blur-sm">
+                      Act #{team.performanceOrder ?? 1}
+                    </span>
+
+                    {team.isPerforming ? (
+                      <span className="bg-party-cyan text-slate-950 font-black text-[10px] px-2.5 py-1 rounded-full border-2 border-black shadow-cartoon-sm flex items-center gap-1 animate-bounce-subtle">
+                        <Radio className="w-3 h-3 text-party-pink animate-pulse" /> LIVE ON STAGE
+                      </span>
+                    ) : team.hasPerformed ? (
+                      <span className="bg-party-lime text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full border-2 border-black flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Performed
+                      </span>
+                    ) : (
+                      <span className="bg-slate-800 text-gray-300 font-black text-[10px] px-2 py-0.5 rounded-full border border-slate-600 flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-party-yellow" /> Upcoming
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Top-right Votes Badge */}
                   <div className="absolute top-3 right-3 bg-party-yellow text-slate-950 font-black text-xs px-3 py-1 rounded-full border-2 border-black shadow-cartoon-sm">
                     {team.voteCount || 0} Votes
                   </div>
@@ -235,26 +299,52 @@ export default function AdminTeamsPage() {
                 </div>
               </div>
 
-              <div className="p-4 pt-0 border-t-2 border-party-border flex items-center justify-end gap-2 mt-2">
-                <Button
-                  size="sm"
-                  variant="cyan"
-                  onClick={() => openEditModal(team)}
-                  className="text-xs px-3 py-1.5"
-                >
-                  <Edit2 className="w-3.5 h-3.5 mr-1" />
-                  <span>Edit</span>
-                </Button>
+              <div className="p-4 pt-0 border-t-2 border-party-border flex flex-col gap-2 mt-2">
+                {/* Stage Performance Controls */}
+                <div className="flex items-center gap-2 pt-3">
+                  <Button
+                    size="sm"
+                    variant={team.isPerforming ? "pink" : "yellow"}
+                    onClick={() => handleToggleStage(team)}
+                    className="flex-1 text-[11px] font-black py-1.5"
+                  >
+                    <Mic2 className="w-3.5 h-3.5 mr-1" />
+                    <span>{team.isPerforming ? "End Stage Act" : "Put on Stage 🎤"}</span>
+                  </Button>
 
-                <Button
-                  size="sm"
-                  variant="pink"
-                  onClick={() => setDeletingTeam(team)}
-                  className="text-xs px-3 py-1.5"
-                >
-                  <Trash2 className="w-3.5 h-3.5 mr-1" />
-                  <span>Delete</span>
-                </Button>
+                  <Button
+                    size="sm"
+                    variant={team.hasPerformed ? "ghost" : "cyan"}
+                    onClick={() => handleTogglePerformed(team)}
+                    className="text-[11px] font-black py-1.5"
+                    title={team.hasPerformed ? "Mark as upcoming" : "Mark as performed"}
+                  >
+                    {team.hasPerformed ? "Mark Upcoming" : "Mark Performed ✅"}
+                  </Button>
+                </div>
+
+                {/* Edit & Delete */}
+                <div className="flex items-center justify-end gap-2 pt-1 border-t border-party-border/50">
+                  <Button
+                    size="sm"
+                    variant="cyan"
+                    onClick={() => openEditModal(team)}
+                    className="text-xs px-3 py-1.5"
+                  >
+                    <Edit2 className="w-3.5 h-3.5 mr-1" />
+                    <span>Edit</span>
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="pink"
+                    onClick={() => setDeletingTeam(team)}
+                    className="text-xs px-3 py-1.5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-1" />
+                    <span>Delete</span>
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
@@ -299,6 +389,35 @@ export default function AdminTeamsPage() {
               placeholder="https://..."
               required
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-black text-party-yellow uppercase tracking-wider mb-1.5">
+                Performance Order (#)
+              </label>
+              <Input
+                type="number"
+                min="1"
+                max="99"
+                value={performanceOrder}
+                onChange={(e) => setPerformanceOrder(parseInt(e.target.value) || 1)}
+                placeholder="1"
+                required
+              />
+            </div>
+
+            <div className="flex flex-col justify-end pb-1">
+              <label className="flex items-center gap-2 cursor-pointer bg-party-surface p-2.5 rounded-2xl border-2 border-black">
+                <input
+                  type="checkbox"
+                  checked={hasPerformed}
+                  onChange={(e) => setHasPerformed(e.target.checked)}
+                  className="w-4 h-4 rounded text-party-yellow focus:ring-party-yellow cursor-pointer"
+                />
+                <span className="text-xs font-black text-white">Has Performed</span>
+              </label>
+            </div>
           </div>
 
           <div>

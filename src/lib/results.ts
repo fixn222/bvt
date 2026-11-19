@@ -43,6 +43,10 @@ export async function calculateLiveResults(): Promise<IResultsData> {
     const percentage =
       totalDevices > 0 ? Number(((votes / totalDevices) * 100).toFixed(1)) : 0;
 
+    const isPerforming =
+      !!eventDoc?.currentPerformingTeamId &&
+      eventDoc.currentPerformingTeamId.toString() === team._id.toString();
+
     return {
       teamId: team._id.toString(),
       name: team.name,
@@ -52,6 +56,8 @@ export async function calculateLiveResults(): Promise<IResultsData> {
       votes,
       percentage,
       isWinner: false,
+      hasPerformed: !!team.hasPerformed,
+      isPerforming,
     };
   });
 
@@ -82,5 +88,8 @@ export async function calculateLiveResults(): Promise<IResultsData> {
     teams: teamResults,
     winners,
     isTie,
+    currentPerformingTeamId: eventDoc?.currentPerformingTeamId
+      ? eventDoc.currentPerformingTeamId.toString()
+      : null,
   };
 }

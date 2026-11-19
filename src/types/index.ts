@@ -6,6 +6,9 @@ export interface ITeam {
   description: string;
   image: string;
   color?: string;
+  hasPerformed?: boolean;
+  isPerforming?: boolean;
+  performanceOrder?: number;
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }
@@ -25,6 +28,9 @@ export interface IEventSettings {
   status: VotingStatus;
   resultsVisible: boolean;
   winnerTeamId?: string | null;
+  currentPerformingTeamId?: string | null;
+  currentPerformingTeam?: ITeam | null;
+  lockUnperformedTeams?: boolean;
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }
@@ -44,6 +50,8 @@ export interface ITeamResult {
   votes: number;
   percentage: number;
   isWinner: boolean;
+  hasPerformed?: boolean;
+  isPerforming?: boolean;
 }
 
 export interface IResultsData {
@@ -53,4 +61,5 @@ export interface IResultsData {
   teams: ITeamResult[];
   winners: ITeamResult[];
   isTie: boolean;
+  currentPerformingTeamId?: string | null;
 }

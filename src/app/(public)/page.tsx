@@ -17,6 +17,7 @@ import {
   Smartphone,
   Repeat,
   Crown,
+  Mic2,
 } from "lucide-react";
 import { ITeam, VotingStatus } from "@/types";
 
@@ -27,6 +28,7 @@ export default async function HomePage() {
   let eventName = "BVTALENT SHOWDOWN!";
   let description = "Watch the performances. Pick your champions. Change your mind. It's party time!";
   let teams: ITeam[] = [];
+  let performingTeam: ITeam | null = null;
 
   try {
     await connectToDatabase();
@@ -34,7 +36,7 @@ export default async function HomePage() {
 
     const [eventDoc, teamDocs] = await Promise.all([
       EventModel.findOne().lean(),
-      Team.find().limit(6).lean(),
+      Team.find().sort({ performanceOrder: 1, createdAt: 1 }).limit(6).lean(),
     ]);
 
     if (eventDoc) {
@@ -44,7 +46,14 @@ export default async function HomePage() {
     }
 
     if (teamDocs) {
-      teams = JSON.parse(JSON.stringify(teamDocs));
+      const performingId = eventDoc?.currentPerformingTeamId?.toString();
+      teams = JSON.parse(JSON.stringify(teamDocs)).map((t: ITeam) => ({
+        ...t,
+        isPerforming: performingId === t._id,
+      }));
+      if (performingId) {
+        performingTeam = teams.find((t) => t._id === performingId) || null;
+      }
     }
   } catch (err) {
     console.error("Home page data load error:", err);
@@ -100,8 +109,14 @@ export default async function HomePage() {
 
         <div className="max-w-4xl mx-auto">
           {/* Status Badge */}
-          <div className="inline-flex items-center gap-2 mb-6">
+          <div className="inline-flex flex-wrap items-center justify-center gap-2.5 mb-6">
             <Badge status={status} className="text-xs sm:text-sm px-4 py-2" />
+            {performingTeam && (
+              <div className="inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-party-cyan px-3.5 py-1.5 text-xs font-black text-slate-950 shadow-cartoon-sm animate-bounce-subtle">
+                <Mic2 className="h-3.5 w-3.5 animate-pulse text-party-pink fill-party-pink" />
+                <span>ON STAGE: {performingTeam.name}</span>
+              </div>
+            )}
           </div>
 
           {/* Huge Cartoon Title */}

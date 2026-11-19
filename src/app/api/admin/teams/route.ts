@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Team } from "@/models/Team";
 import { DeviceVote } from "@/models/DeviceVote";
+import { EventModel } from "@/models/Event";
 import { getAdminFromRequest } from "@/lib/auth";
 import { teamSchema } from "@/lib/validations";
 
@@ -16,16 +17,17 @@ export async function GET(req: NextRequest) {
 
     await connectToDatabase();
 
-    const teams = await Team.find().sort({ createdAt: 1 }).lean();
-
-    // Attach active device vote counts
-    const counts = await DeviceVote.aggregate([
-      {
-        $group: {
-          _id: "$currentTeamId",
-          votes: { $sum: 1 },
+    const [teams, eventDoc, counts] = await Promise.all([
+      Team.find().sort({ performanceOrder: 1, createdAt: 1 }).lean(),
+      EventModel.findOne().lean(),
+      DeviceVote.aggregate([
+        {
+          $group: {
+            _id: "$currentTeamId",
+            votes: { $sum: 1 },
+          },
         },
-      },
+      ]),
     ]);
 
     const countMap = new Map<string, number>();
@@ -33,12 +35,21 @@ export async function GET(req: NextRequest) {
       if (c._id) countMap.set(c._id.toString(), c.votes);
     }
 
+    const currentPerformingId = eventDoc?.currentPerformingTeamId?.toString();
+
     const teamsWithCounts = teams.map((t) => ({
       ...t,
       voteCount: countMap.get(t._id.toString()) || 0,
+      hasPerformed: !!t.hasPerformed,
+      isPerforming: currentPerformingId === t._id.toString(),
     }));
 
-    return NextResponse.json({ success: true, teams: teamsWithCounts });
+    return NextResponse.json({
+      success: true,
+      teams: teamsWithCounts,
+      currentPerformingTeamId: currentPerformingId || null,
+      lockUnperformedTeams: eventDoc?.lockUnperformedTeams !== false,
+    });
   } catch (error) {
     console.error("GET /api/admin/teams error:", error);
     return NextResponse.json(

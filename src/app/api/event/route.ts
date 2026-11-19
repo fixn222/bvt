@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { EventModel } from "@/models/Event";
+import { Team } from "@/models/Team";
 import { ensureInitialData } from "@/lib/bootstrap";
 
 export const dynamic = "force-dynamic";
@@ -18,12 +19,24 @@ export async function GET() {
       );
     }
 
+    let currentPerformingTeam = null;
+    if (eventDoc.currentPerformingTeamId) {
+      currentPerformingTeam = await Team.findById(eventDoc.currentPerformingTeamId)
+        .select("_id name description image color hasPerformed")
+        .lean();
+    }
+
     return NextResponse.json({
       name: eventDoc.name,
       description: eventDoc.description,
       status: eventDoc.status,
       resultsVisible: !!eventDoc.resultsVisible,
       winnerTeamId: eventDoc.winnerTeamId ? eventDoc.winnerTeamId.toString() : null,
+      currentPerformingTeamId: eventDoc.currentPerformingTeamId
+        ? eventDoc.currentPerformingTeamId.toString()
+        : null,
+      currentPerformingTeam,
+      lockUnperformedTeams: eventDoc.lockUnperformedTeams !== false,
     });
   } catch (error) {
     console.error("GET /api/event error:", error);

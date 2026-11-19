@@ -29,10 +29,20 @@ export const teamSchema = z.object({
   color: z
     .enum(["yellow", "pink", "cyan", "lime", "purple", "orange"])
     .default("yellow"),
+  hasPerformed: z.boolean().default(false),
+  performanceOrder: z.number().default(0),
 });
 
 export const teamUpdateSchema = teamSchema.partial();
 
 export const eventStatusSchema = z.object({
   status: z.enum(["upcoming", "open", "closed"]),
+});
+
+export const performingSchema = z.object({
+  teamId: z
+    .string()
+    .regex(/^[0-9a-fA-F]{24}$/, "Invalid team identifier format")
+    .nullable(),
+  lockUnperformedTeams: z.boolean().optional(),
 });

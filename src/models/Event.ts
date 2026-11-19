@@ -7,6 +7,8 @@ export interface IEventDocument extends Document {
   status: VotingStatus;
   resultsVisible: boolean;
   winnerTeamId?: Types.ObjectId | null;
+  currentPerformingTeamId?: Types.ObjectId | null;
+  lockUnperformedTeams: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +38,15 @@ const EventSchema = new Schema<IEventDocument>(
       type: Schema.Types.ObjectId,
       ref: "Team",
       default: null,
+    },
+    currentPerformingTeamId: {
+      type: Schema.Types.ObjectId,
+      ref: "Team",
+      default: null,
+    },
+    lockUnperformedTeams: {
+      type: Boolean,
+      default: true,
     },
   },
   {

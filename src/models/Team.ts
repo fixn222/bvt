@@ -5,6 +5,8 @@ export interface ITeamDocument extends Document {
   description: string;
   image: string;
   color: string;
+  hasPerformed: boolean;
+  performanceOrder: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +31,14 @@ const TeamSchema = new Schema<ITeamDocument>(
     color: {
       type: String,
       default: "yellow", // yellow, pink, cyan, lime, purple, orange
+    },
+    hasPerformed: {
+      type: Boolean,
+      default: false,
+    },
+    performanceOrder: {
+      type: Number,
+      default: 0,
     },
   },
   {

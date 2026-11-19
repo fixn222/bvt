@@ -4,6 +4,7 @@ import {
   adminLoginSchema,
   teamSchema,
   eventStatusSchema,
+  performingSchema,
 } from "../lib/validations";
 
 describe("Cartoon Validation Schemas Tests", () => {
@@ -75,5 +76,30 @@ describe("Cartoon Validation Schemas Tests", () => {
     expect(eventStatusSchema.safeParse({ status: "upcoming" }).success).toBe(true);
     expect(eventStatusSchema.safeParse({ status: "closed" }).success).toBe(true);
     expect(eventStatusSchema.safeParse({ status: "paused" }).success).toBe(false);
+  });
+
+  it("should validate stage performingSchema payload", () => {
+    // Valid ObjectId
+    expect(
+      performingSchema.safeParse({
+        teamId: "507f1f77bcf86cd799439011",
+        lockUnperformedTeams: true,
+      }).success
+    ).toBe(true);
+
+    // Null teamId (clearing stage)
+    expect(
+      performingSchema.safeParse({
+        teamId: null,
+        lockUnperformedTeams: false,
+      }).success
+    ).toBe(true);
+
+    // Invalid format
+    expect(
+      performingSchema.safeParse({
+        teamId: "not-a-valid-hex-id",
+      }).success
+    ).toBe(false);
   });
 });

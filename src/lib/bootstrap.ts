@@ -17,6 +17,8 @@ export async function ensureInitialData() {
         status: "open",
         resultsVisible: false,
         winnerTeamId: null,
+        currentPerformingTeamId: null,
+        lockUnperformedTeams: true,
       });
     } catch {
       eventDoc = await EventModel.findOne();
@@ -48,30 +50,40 @@ export async function ensureInitialData() {
         description: "Electro-funk dance crew with glowing whiskers and laser-fast choreography!",
         image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=80",
         color: "pink",
+        hasPerformed: true,
+        performanceOrder: 1,
       },
       {
         name: "Bubblegum Beats",
         description: "A cappella pop harmonizers dropping sweet candy vocals and human beatboxing!",
         image: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=800&auto=format&fit=crop&q=80",
         color: "yellow",
+        hasPerformed: false,
+        performanceOrder: 2,
       },
       {
         name: "Cosmic Acrobats",
         description: "Gravity-defying aerial flips, human pyramids, and cartoon-level agility stunts!",
         image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=800&auto=format&fit=crop&q=80",
         color: "cyan",
+        hasPerformed: false,
+        performanceOrder: 3,
       },
       {
         name: "Disco Dragons",
         description: "Hot brass horns, funky slap bass, and fiery disco energy that shakes the floor!",
         image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&auto=format&fit=crop&q=80",
         color: "orange",
+        hasPerformed: false,
+        performanceOrder: 4,
       },
       {
         name: "Funky Monks",
         description: "Old school hip-hop breakdancers spinning on their heads with comedic flair!",
         image: "https://images.unsplash.com/photo-1547153760-18fc86324498?w=800&auto=format&fit=crop&q=80",
         color: "lime",
+        hasPerformed: false,
+        performanceOrder: 5,
       },
     ];
 

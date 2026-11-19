@@ -17,6 +17,10 @@ import {
   Sparkles,
   BarChart3,
   Flame,
+  Mic2,
+  CheckCircle2,
+  ShieldCheck,
+  Radio,
 } from "lucide-react";
 import { ITeamResult, VotingStatus } from "@/types";
 import { formatPercentage } from "@/lib/utils";
@@ -38,21 +42,51 @@ export default function AdminDashboardPage() {
   const [teams, setTeams] = useState<ITeamResult[]>([]);
   const [winners, setWinners] = useState<ITeamResult[]>([]);
   const [isTie, setIsTie] = useState(false);
+  const [currentPerformingTeamId, setCurrentPerformingTeamId] = useState<string | null>(null);
+  const [lockUnperformedTeams, setLockUnperformedTeams] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const fetchLiveResults = useCallback(async (manual: boolean = false) => {
     try {
-      const res = await fetch(`/api/admin/results?t=${Date.now()}`);
-      const data = await res.json();
+      const [resResults, resEvent, resTeams] = await Promise.all([
+        fetch(`/api/admin/results?t=${Date.now()}`),
+        fetch(`/api/event?t=${Date.now()}`),
+        fetch(`/api/admin/teams?t=${Date.now()}`),
+      ]);
+
+      const data = await resResults.json();
+      const eventData = await resEvent.json();
+      const teamsData = await resTeams.json();
+
       if (data.success) {
         setStatus(data.status);
         setResultsVisible(data.resultsVisible);
         setTotalDevices(data.totalDevices || 0);
-        setTeams(data.teams || []);
+
+        // Merge hasPerformed info from teamsData
+        const performedMap = new Map<string, boolean>();
+        if (teamsData?.teams) {
+          for (const t of teamsData.teams) {
+            performedMap.set(t._id, !!t.hasPerformed);
+          }
+        }
+
+        const enrichedTeams = (data.teams || []).map((t: ITeamResult) => ({
+          ...t,
+          hasPerformed: performedMap.get(t.teamId) ?? t.hasPerformed ?? false,
+          isPerforming: eventData?.currentPerformingTeamId === t.teamId,
+        }));
+
+        setTeams(enrichedTeams);
         setWinners(data.winners || []);
         setIsTie(!!data.isTie);
+      }
+
+      if (eventData) {
+        setCurrentPerformingTeamId(eventData.currentPerformingTeamId || null);
+        setLockUnperformedTeams(eventData.lockUnperformedTeams !== false);
       }
     } catch (err) {
       console.error("Dashboard fetch error:", err);
@@ -115,6 +149,57 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Set Currently Performing Act on Stage
+  const handleSetPerforming = async (teamId: string | null) => {
+    try {
+      setIsActionLoading(true);
+      setFeedback(null);
+      const res = await fetch("/api/admin/event/performing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update performing act");
+      setCurrentPerformingTeamId(teamId);
+      setFeedback(data.message);
+      fetchLiveResults();
+    } catch (err: unknown) {
+      const error = err as Error;
+      setFeedback(error.message);
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  // Toggle locking unperformed teams
+  const handleToggleLockUnperformed = async () => {
+    try {
+      setIsActionLoading(true);
+      setFeedback(null);
+      const nextLock = !lockUnperformedTeams;
+      const res = await fetch("/api/admin/event/performing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId: currentPerformingTeamId, lockUnperformedTeams: nextLock }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update lock setting");
+      setLockUnperformedTeams(nextLock);
+      setFeedback(
+        nextLock
+          ? "Locked: Guests can only vote for acts that have taken the stage! 🔒"
+          : "Unlocked: Guests can now vote for any act freely! 🔓"
+      );
+      fetchLiveResults();
+    } catch (err: unknown) {
+      const error = err as Error;
+      setFeedback(error.message);
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
   const chartColors = ["#FFE600", "#FF2E93", "#00F0FF", "#22C55E", "#FF6B00", "#9333EA"];
 
   return (
@@ -141,7 +226,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-party-card border-3 border-black rounded-3xl p-6 shadow-cartoon flex items-center justify-between">
           <div>
             <span className="text-xs font-black uppercase tracking-wider text-party-yellow block mb-1">
@@ -183,6 +268,23 @@ export default function AdminDashboardPage() {
         <div className="bg-party-card border-3 border-black rounded-3xl p-6 shadow-cartoon flex items-center justify-between">
           <div>
             <span className="text-xs font-black uppercase tracking-wider text-party-cyan block mb-1">
+              Now on Stage 🎤
+            </span>
+            <span className="text-xl font-black text-white font-cartoon truncate block max-w-[180px]">
+              {teams.find((t) => t.teamId === currentPerformingTeamId)?.name || "Intermission"}
+            </span>
+            <p className="text-[11px] text-gray-400 font-bold mt-1">
+              {currentPerformingTeamId ? "Live performance active" : "No act on stage"}
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-party-cyan border-2 border-black shadow-cartoon-sm flex items-center justify-center">
+            <Mic2 className="w-6 h-6 text-slate-950 animate-pulse" />
+          </div>
+        </div>
+
+        <div className="bg-party-card border-3 border-black rounded-3xl p-6 shadow-cartoon flex items-center justify-between">
+          <div>
+            <span className="text-xs font-black uppercase tracking-wider text-party-lime block mb-1">
               Public Reveal Status
             </span>
             <span className="text-2xl font-black text-white font-cartoon block">
@@ -192,7 +294,7 @@ export default function AdminDashboardPage() {
               {resultsVisible ? "Audience can see winner" : "Hidden from guests"}
             </p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-party-cyan border-2 border-black shadow-cartoon-sm flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-party-lime border-2 border-black shadow-cartoon-sm flex items-center justify-center">
             <Trophy className="w-6 h-6 text-slate-950" />
           </div>
         </div>
@@ -279,6 +381,171 @@ export default function AdminDashboardPage() {
             <RefreshCw className="w-4 h-4 mr-1.5" />
             <span>Refresh Tally</span>
           </Button>
+        </div>
+      </div>
+
+      {/* 🎤 Live Stage Manager: Set Performing Act & Lock Unperformed Teams */}
+      <div className="bg-party-card border-4 border-black rounded-3xl p-6 sm:p-8 shadow-cartoon-lg space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 bg-party-cyan text-slate-950 font-black text-xs px-3 py-1 rounded-full border-2 border-black shadow-cartoon-sm uppercase mb-2">
+              <Mic2 className="w-3.5 h-3.5 fill-party-pink text-party-pink animate-pulse" />
+              <span>LIVE STAGE CONTROLLER</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white font-cartoon uppercase">
+              WHO&apos;S ON STAGE RIGHT NOW?
+            </h2>
+            <p className="text-xs text-gray-300 font-bold mt-0.5">
+              Select the active performing act. Guests see this act featured on top, and unperformed acts remain locked!
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant={lockUnperformedTeams ? "lime" : "orange"}
+              onClick={handleToggleLockUnperformed}
+              disabled={isActionLoading}
+              className="text-xs"
+            >
+              {lockUnperformedTeams ? (
+                <>
+                  <Lock className="w-3.5 h-3.5 mr-1" />
+                  <span>Lock Unperformed Acts: ON</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5 mr-1" />
+                  <span>Lock Unperformed Acts: OFF</span>
+                </>
+              )}
+            </Button>
+
+            {currentPerformingTeamId && (
+              <Button
+                size="sm"
+                variant="pink"
+                onClick={() => handleSetPerforming(null)}
+                disabled={isActionLoading}
+                className="text-xs"
+              >
+                <span>Clear Stage (Intermission)</span>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Current Active Performer Spotlight */}
+        {(() => {
+          const activeTeam = teams.find((t) => t.teamId === currentPerformingTeamId);
+          if (!activeTeam) {
+            return (
+              <div className="p-4 rounded-2xl bg-party-surface border-2 border-dashed border-gray-600 text-center text-xs font-bold text-gray-400 flex items-center justify-center gap-2">
+                <Mic2 className="w-4 h-4 text-gray-500" />
+                <span>No act currently on stage (Intermission). Click &quot;Put on Stage&quot; on any act below!</span>
+              </div>
+            );
+          }
+
+          return (
+            <div className="p-4 rounded-2xl bg-party-surface border-3 border-party-cyan shadow-cartoon-cyan flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="relative w-14 h-14 rounded-xl border-2 border-black overflow-hidden flex-shrink-0">
+                  <Image
+                    src={activeTeam.image}
+                    alt={activeTeam.name}
+                    fill
+                    sizes="56px"
+                    className="object-cover"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase text-party-cyan tracking-wider flex items-center gap-1">
+                    <Radio className="w-3 h-3 text-party-pink animate-pulse" /> LIVE ON STAGE NOW
+                  </span>
+                  <h3 className="text-xl font-black text-white font-cartoon">
+                    {activeTeam.name}
+                  </h3>
+                  <p className="text-xs text-gray-300 font-medium">
+                    {activeTeam.description || "Performing on stage!"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="yellow"
+                  onClick={() => handleSetPerforming(null)}
+                  disabled={isActionLoading}
+                  className="text-xs"
+                >
+                  <span>Finish Act & Clear Stage</span>
+                </Button>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Acts Roster Grid for Quick Stage Setting */}
+        <div>
+          <span className="text-xs font-black uppercase tracking-wider text-party-yellow block mb-3">
+            Quick Act Selector (Click to Put on Stage)
+          </span>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {teams.map((t) => {
+              const isOnStage = t.teamId === currentPerformingTeamId;
+              const hasPerformed = !!t.hasPerformed;
+
+              return (
+                <div
+                  key={t.teamId}
+                  className={`p-3 rounded-2xl border-2 border-black shadow-cartoon-sm flex items-center justify-between gap-2 transition-all ${
+                    isOnStage
+                      ? "bg-party-cyan text-slate-950 font-black scale-102 ring-2 ring-white"
+                      : hasPerformed
+                        ? "bg-party-surface text-white"
+                        : "bg-party-surface/70 text-gray-300 border-dashed"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="relative w-10 h-10 rounded-xl border border-black overflow-hidden flex-shrink-0">
+                      <Image
+                        src={t.image}
+                        alt={t.name}
+                        fill
+                        sizes="40px"
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-black text-xs truncate font-cartoon">
+                        {t.name}
+                      </h4>
+                      <span className="text-[10px] block opacity-80 font-bold">
+                        {isOnStage
+                          ? "🎤 On Stage"
+                          : hasPerformed
+                            ? "✅ Performed (Voting Open)"
+                            : "⏳ Upcoming Act"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button
+                    size="sm"
+                    variant={isOnStage ? "pink" : "yellow"}
+                    onClick={() => handleSetPerforming(isOnStage ? null : t.teamId)}
+                    disabled={isActionLoading}
+                    className="text-[10px] px-2.5 py-1 min-h-8 flex-shrink-0"
+                  >
+                    {isOnStage ? "End Act" : "Put on Stage 🎤"}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

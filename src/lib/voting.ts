@@ -67,14 +67,26 @@ export async function castOrUpdateDeviceVote(
     throw new Error("The selected team does not exist.");
   }
 
-  // 3. Hash Device ID
+  // 3. Verify Team is eligible to receive votes (performed or currently on stage)
+  const isCurrentlyPerforming =
+    !!eventDoc.currentPerformingTeamId &&
+    eventDoc.currentPerformingTeamId.toString() === teamId;
+  const lockUnperformed = eventDoc.lockUnperformedTeams !== false;
+
+  if (lockUnperformed && !team.hasPerformed && !isCurrentlyPerforming) {
+    throw new Error(
+      `Hold on! ${team.name} hasn't performed on stage yet! ⏳🎤 Voting unlocks when they take the stage!`
+    );
+  }
+
+  // 4. Hash Device ID
   const deviceIdHash = hashDeviceId(deviceId);
 
-  // 4. Check for existing vote to determine if switching
+  // 5. Check for existing vote to determine if switching
   const existing = await DeviceVote.findOne({ deviceIdHash }).lean();
   const isSwitch = !!existing && existing.currentTeamId.toString() !== teamId;
 
-  // 5. Atomic Upsert: exactly 1 document per device in DeviceVote collection
+  // 6. Atomic Upsert: exactly 1 document per device in DeviceVote collection
   await DeviceVote.findOneAndUpdate(
     { deviceIdHash },
     {

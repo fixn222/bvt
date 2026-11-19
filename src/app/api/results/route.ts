@@ -35,6 +35,7 @@ export async function GET() {
       teams: results.teams,
       winners: results.winners,
       isTie: results.isTie,
+      currentPerformingTeamId: results.currentPerformingTeamId,
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {

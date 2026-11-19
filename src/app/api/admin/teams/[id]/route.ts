@@ -83,10 +83,20 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     // Clean up device votes linked to this deleted team
     await DeviceVote.deleteMany({ currentTeamId: params.id });
 
-    // Clear winnerTeamId if the deleted team was set as winner
+    // Clear winnerTeamId and currentPerformingTeamId if referencing deleted team
     await EventModel.updateMany(
-      { winnerTeamId: params.id },
-      { $set: { winnerTeamId: null } }
+      {
+        $or: [
+          { winnerTeamId: params.id },
+          { currentPerformingTeamId: params.id },
+        ],
+      },
+      {
+        $set: {
+          winnerTeamId: null,
+          currentPerformingTeamId: null,
+        },
+      }
     );
 
     return NextResponse.json({

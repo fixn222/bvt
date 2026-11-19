@@ -5,7 +5,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-green?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/)
-[![Vitest](https://img.shields.io/badge/Tests-24%20Passed-brightgreen?style=for-the-badge&logo=vitest)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Tests-25%20Passed-brightgreen?style=for-the-badge&logo=vitest)](https://vitest.dev/)
 
 > **"Watch the performances. Pick your champions. Change your mind. It's party time!"**
 
@@ -75,11 +75,15 @@ Designed like a colourful cartoon party game (bright yellow, neon pink, cyan, li
    - `status`: `"upcoming" | "open" | "closed"`
    - `resultsVisible`: boolean
    - `winnerTeamId`: ObjectId (ref: Team)
+   - `currentPerformingTeamId`: ObjectId (ref: Team)
+   - `lockUnperformedTeams`: boolean (default: `true`, prevents guests from voting for acts before they perform)
 2. **`Team` Model:**
    - `name`: string
    - `description`: string
    - `image`: string
    - `color`: `"yellow" | "pink" | "cyan" | "lime" | "purple" | "orange"`
+   - `hasPerformed`: boolean (auto-marked true when act hits the stage)
+   - `performanceOrder`: number (line-up schedule position)
 3. **`DeviceVote` Model:**
    - `deviceIdHash`: string (HMAC-SHA256, unique index)
    - `currentTeamId`: ObjectId (ref: Team)

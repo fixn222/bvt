@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { ITeam, VotingStatus } from "@/types";
 import { CartoonTeamCard } from "@/components/teams/CartoonTeamCard";
 import { getDeviceId } from "@/lib/device";
@@ -17,6 +18,9 @@ import {
   Lock,
   Clock,
   ArrowRight,
+  Mic2,
+  Radio,
+  Star,
 } from "lucide-react";
 
 export const CartoonVotingGrid = () => {
@@ -24,6 +28,9 @@ export const CartoonVotingGrid = () => {
   const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
   const [status, setStatus] = useState<VotingStatus>("open");
   const [eventName, setEventName] = useState("BVTalent Showdown");
+  const [currentPerformingTeamId, setCurrentPerformingTeamId] = useState<string | null>(null);
+  const [currentPerformingTeam, setCurrentPerformingTeam] = useState<ITeam | null>(null);
+  const [lockUnperformedTeams, setLockUnperformedTeams] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -46,6 +53,9 @@ export const CartoonVotingGrid = () => {
       if (eventData?.status) {
         setStatus(eventData.status);
         if (eventData.name) setEventName(eventData.name);
+        setCurrentPerformingTeamId(eventData.currentPerformingTeamId || null);
+        setCurrentPerformingTeam(eventData.currentPerformingTeam || null);
+        setLockUnperformedTeams(eventData.lockUnperformedTeams !== false);
       }
 
       if (teamsData?.teams) {
@@ -80,7 +90,7 @@ export const CartoonVotingGrid = () => {
     setDeviceId(id);
     loadData(true, id);
 
-    // Live polling every 4s to track when host opens/closes voting or updates teams
+    // Live polling every 4s to track when host opens/closes voting, changes performing team, or updates teams
     const interval = setInterval(() => {
       loadData(false, id);
     }, 4000);
@@ -92,6 +102,13 @@ export const CartoonVotingGrid = () => {
     if (isSubmitting) return;
     if (status !== "open") return;
     if (team._id === currentTeamId) return; // Already current choice
+
+    // Client-side guard for locked acts
+    const isCurrentlyPerforming = team._id === currentPerformingTeamId;
+    if (lockUnperformedTeams && !team.hasPerformed && !isCurrentlyPerforming) {
+      setErrorMessage(`Hold on! ${team.name} hasn't performed yet! ⏳ Voting unlocks when they hit the stage!`);
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -224,6 +241,64 @@ export const CartoonVotingGrid = () => {
         </div>
       )}
 
+      {/* 🎤 Spotlight: Now Performing Act on Stage */}
+      {currentPerformingTeam && (
+        <div className="relative mb-8 overflow-hidden rounded-3xl border-4 border-black bg-gradient-to-r from-party-surface via-party-card to-party-surface p-5 sm:p-7 shadow-cartoon-xl ring-4 ring-party-cyan/40">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
+            <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left min-w-0">
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-3 border-black shadow-cartoon flex-shrink-0">
+                {currentPerformingTeam.image ? (
+                  <Image
+                    src={currentPerformingTeam.image}
+                    alt={currentPerformingTeam.name}
+                    fill
+                    sizes="112px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-party-cyan flex items-center justify-center">
+                    <Mic2 className="w-8 h-8 text-slate-950" />
+                  </div>
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <div className="inline-flex items-center gap-1.5 bg-party-cyan text-slate-950 px-3 py-1 rounded-full border-2 border-black font-black text-xs uppercase mb-1.5 shadow-cartoon-sm animate-bounce-subtle">
+                  <Mic2 className="w-3.5 h-3.5 fill-party-pink text-party-pink animate-pulse" />
+                  <span>ON STAGE RIGHT NOW!</span>
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-black text-white font-cartoon truncate">
+                  {currentPerformingTeam.name}
+                </h2>
+                <p className="text-xs text-gray-300 font-medium line-clamp-2 max-w-lg mt-0.5">
+                  {currentPerformingTeam.description || "Live performance in progress! Tap to cheer and vote!"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex-shrink-0 w-full sm:w-auto">
+              {currentTeamId === currentPerformingTeam._id ? (
+                <div className="bg-party-yellow text-slate-950 px-5 py-3 rounded-2xl border-3 border-black shadow-cartoon-sm font-black text-xs text-center flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-party-pink stroke-[3]" />
+                  <span>You&apos;re Backing This Live Act! ⭐</span>
+                </div>
+              ) : (
+                <Button
+                  size="lg"
+                  variant="cyan"
+                  onClick={() => handleSelectTeam(currentPerformingTeam)}
+                  disabled={!isVotingOpen || isSubmitting}
+                  className="w-full sm:w-auto shadow-cartoon text-xs sm:text-sm font-black"
+                >
+                  <Star className="w-4 h-4 mr-1.5 fill-party-pink text-party-pink animate-bounce" />
+                  <span>Vote For Live Act! 🚀</span>
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Team Cards Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -246,15 +321,22 @@ export const CartoonVotingGrid = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-          {teams.map((team) => (
-            <CartoonTeamCard
-              key={team._id}
-              team={team}
-              isSelected={currentTeamId === team._id}
-              onSelect={handleSelectTeam}
-              disabled={!isVotingOpen || isSubmitting}
-            />
-          ))}
+          {teams.map((team) => {
+            const isPerforming = team._id === currentPerformingTeamId;
+            const isLocked = lockUnperformedTeams && !team.hasPerformed && !isPerforming;
+
+            return (
+              <CartoonTeamCard
+                key={team._id}
+                team={team}
+                isSelected={currentTeamId === team._id}
+                onSelect={handleSelectTeam}
+                disabled={!isVotingOpen || isSubmitting || isLocked}
+                isPerforming={isPerforming}
+                isLocked={isLocked}
+              />
+            );
+          })}
         </div>
       )}
     </div>
