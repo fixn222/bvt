@@ -124,3 +124,14 @@ export async function castOrUpdateDeviceVote(
     teamName: team.name,
   };
 }
+
+export async function resetAllVotes() {
+  await connectToDatabase();
+  const deleteResult = await DeviceVote.deleteMany({});
+  await EventModel.updateOne({}, { $set: { winnerTeamId: null } });
+  return {
+    success: true,
+    deletedCount: deleteResult.deletedCount || 0,
+  };
+}
+

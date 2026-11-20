@@ -54,6 +54,10 @@ describe("Party Voting Engine and Integrity Tests", () => {
       return { hasVoted: true, currentTeamId: vote.currentTeamId };
     }
 
+    public resetVotes() {
+      this.votes.clear();
+    }
+
     public getResults() {
       const totalDevices = this.votes.size;
       const countMap = new Map<string, number>();
@@ -224,5 +228,20 @@ describe("Party Voting Engine and Integrity Tests", () => {
     expect(bravo?.percentage).toBe(40.0);
     expect(results.isTie).toBe(false);
     expect(results.winners[0].teamId).toBe("team-a");
+  });
+
+  it("should reset all voting counts and voter devices when votes are reset", () => {
+    const engine = new VotingEngine();
+    engine.castVote("hash-device-1", "team-a");
+    engine.castVote("hash-device-2", "team-b");
+    expect(engine.getResults().totalDevices).toBe(2);
+
+    engine.resetVotes();
+    const results = engine.getResults();
+    expect(results.totalDevices).toBe(0);
+    expect(results.teams.find((t) => t.teamId === "team-a")?.votes).toBe(0);
+    expect(results.teams.find((t) => t.teamId === "team-b")?.votes).toBe(0);
+    expect(results.winners).toHaveLength(0);
+    expect(engine.getDeviceSelection("hash-device-1").hasVoted).toBe(false);
   });
 });

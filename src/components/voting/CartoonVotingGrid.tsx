@@ -63,12 +63,14 @@ export const CartoonVotingGrid = () => {
       }
 
       const idToCheck = activeId || deviceId || getDeviceId();
-      if (idToCheck && isInitial) {
+      if (idToCheck) {
         try {
           const voteRes = await fetch(`/api/voting/me?deviceId=${idToCheck}&t=${Date.now()}`);
           const voteData = await voteRes.json();
           if (voteData?.hasVoted && voteData?.currentTeamId) {
             setCurrentTeamId(voteData.currentTeamId);
+          } else if (voteData && !voteData.hasVoted) {
+            setCurrentTeamId(null);
           }
         } catch {
           // Ignore failure to fetch past vote

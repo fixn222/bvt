@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Clock,
   Radio,
+  RotateCcw,
 } from "lucide-react";
 import { ITeam } from "@/types";
 
@@ -38,6 +39,10 @@ export default function AdminTeamsPage() {
   // Delete Confirm State
   const [deletingTeam, setDeletingTeam] = useState<ITeam | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Reset Votes State
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const fetchTeams = useCallback(async () => {
     try {
@@ -178,6 +183,23 @@ export default function AdminTeamsPage() {
     }
   };
 
+  const handleResetVotes = async () => {
+    try {
+      setIsResetting(true);
+      const res = await fetch("/api/admin/event/reset-votes", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to reset votes");
+      setIsResetModalOpen(false);
+      fetchTeams();
+    } catch (err) {
+      console.error("Reset votes error:", err);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   const colorOptions = [
     { label: "Yellow", value: "yellow", bg: "bg-party-yellow text-black" },
     { label: "Pink", value: "pink", bg: "bg-party-pink text-white" },
@@ -201,15 +223,27 @@ export default function AdminTeamsPage() {
           </p>
         </div>
 
-        <Button
-          size="md"
-          variant="yellow"
-          onClick={openCreateModal}
-          className="text-xs font-black shadow-cartoon"
-        >
-          <Plus className="w-4 h-4 mr-1.5" />
-          <span>Add New Performer</span>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="md"
+            variant="pink"
+            onClick={() => setIsResetModalOpen(true)}
+            className="text-xs font-black shadow-cartoon"
+          >
+            <RotateCcw className="w-4 h-4 mr-1.5" />
+            <span>Reset Votes</span>
+          </Button>
+
+          <Button
+            size="md"
+            variant="yellow"
+            onClick={openCreateModal}
+            className="text-xs font-black shadow-cartoon"
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            <span>Add New Performer</span>
+          </Button>
+        </div>
       </div>
 
       {/* Teams Grid */}
@@ -501,6 +535,36 @@ export default function AdminTeamsPage() {
           >
             Yes, Delete Team
           </Button>
+        </div>
+      </Modal>
+
+      {/* Reset Votes Confirmation Modal */}
+      <Modal
+        isOpen={isResetModalOpen}
+        onClose={() => !isResetting && setIsResetModalOpen(false)}
+        title="Reset Voting Count?"
+        description="Are you sure you want to reset all team vote counts back to zero? This permanently deletes all audience votes."
+        maxWidth="sm"
+      >
+        <div className="space-y-4 pt-2">
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              variant="ghost"
+              onClick={() => setIsResetModalOpen(false)}
+              disabled={isResetting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="pink"
+              onClick={handleResetVotes}
+              isLoading={isResetting}
+              className="shadow-cartoon"
+            >
+              <RotateCcw className="w-4 h-4 mr-1.5" />
+              <span>Yes, Reset Votes</span>
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

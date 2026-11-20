@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { firePartyConfetti } from "@/components/voting/Confetti";
 import {
   Trophy,
@@ -13,6 +14,7 @@ import {
   Maximize2,
   Minimize2,
   RefreshCw,
+  RotateCcw,
   Radio,
   Medal,
 } from "lucide-react";
@@ -28,6 +30,8 @@ export default function AdminResultsStagePage() {
   const [isTie, setIsTie] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const fetchResults = useCallback(async () => {
@@ -69,6 +73,23 @@ export default function AdminResultsStagePage() {
       console.error("Reveal toggle error:", err);
     } finally {
       setIsToggling(false);
+    }
+  };
+
+  const handleResetVotes = async () => {
+    try {
+      setIsResetting(true);
+      const res = await fetch("/api/admin/event/reset-votes", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to reset votes");
+      setIsResetModalOpen(false);
+      fetchResults();
+    } catch (err) {
+      console.error("Reset votes error:", err);
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -124,7 +145,18 @@ export default function AdminResultsStagePage() {
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            variant={resultsVisible ? "lime" : "pink"}
+            variant="pink"
+            onClick={() => setIsResetModalOpen(true)}
+            disabled={isResetting}
+            className="text-xs font-black shadow-cartoon-sm"
+          >
+            <RotateCcw className="w-3.5 h-3.5 mr-1" />
+            <span>Reset Votes</span>
+          </Button>
+
+          <Button
+            size="sm"
+            variant={resultsVisible ? "lime" : "purple"}
             onClick={handleToggleReveal}
             isLoading={isToggling}
             className="text-xs font-black shadow-cartoon-sm"
@@ -278,6 +310,45 @@ export default function AdminResultsStagePage() {
           </div>
         </div>
       </div>
+
+      {/* Reset Votes Modal */}
+      <Modal
+        isOpen={isResetModalOpen}
+        onClose={() => !isResetting && setIsResetModalOpen(false)}
+        title="Reset Voting Count?"
+        description="Are you sure you want to reset the voting count? This will permanently wipe all attendee votes and set the standings back to zero."
+        maxWidth="sm"
+      >
+        <div className="space-y-4 pt-2">
+          <div className="p-3.5 rounded-2xl bg-party-surface border-2 border-black flex items-center justify-between">
+            <span className="text-xs font-black uppercase text-gray-300">
+              Active Ballots
+            </span>
+            <span className="text-xl font-black text-party-pink font-mono">
+              {totalDevices}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              variant="ghost"
+              onClick={() => setIsResetModalOpen(false)}
+              disabled={isResetting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="pink"
+              onClick={handleResetVotes}
+              isLoading={isResetting}
+              className="shadow-cartoon"
+            >
+              <RotateCcw className="w-4 h-4 mr-1.5" />
+              <span>Yes, Reset Votes</span>
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

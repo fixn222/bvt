@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Modal } from "@/components/ui/Modal";
 import {
   Trophy,
   Users,
@@ -13,6 +14,7 @@ import {
   Eye,
   EyeOff,
   RefreshCw,
+  RotateCcw,
   Crown,
   Sparkles,
   BarChart3,
@@ -46,6 +48,8 @@ export default function AdminDashboardPage() {
   const [lockUnperformedTeams, setLockUnperformedTeams] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const fetchLiveResults = useCallback(async (manual: boolean = false) => {
@@ -197,6 +201,27 @@ export default function AdminDashboardPage() {
       setFeedback(error.message);
     } finally {
       setIsActionLoading(false);
+    }
+  };
+
+  // Handle Reset All Votes
+  const handleResetVotes = async () => {
+    try {
+      setIsResetting(true);
+      setFeedback(null);
+      const res = await fetch("/api/admin/event/reset-votes", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to reset votes");
+      setIsResetModalOpen(false);
+      setFeedback(data.message || "All voting counts have been reset to zero! 🔄");
+      fetchLiveResults();
+    } catch (err: unknown) {
+      const error = err as Error;
+      setFeedback(error.message);
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -380,6 +405,17 @@ export default function AdminDashboardPage() {
           >
             <RefreshCw className="w-4 h-4 mr-1.5" />
             <span>Refresh Tally</span>
+          </Button>
+
+          <Button
+            size="lg"
+            variant="pink"
+            onClick={() => setIsResetModalOpen(true)}
+            disabled={isActionLoading || isResetting}
+            className="text-xs sm:text-sm"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            <span>Reset Voting Count</span>
           </Button>
         </div>
       </div>
@@ -650,6 +686,49 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Reset Voting Count Confirmation Modal */}
+      <Modal
+        isOpen={isResetModalOpen}
+        onClose={() => !isResetting && setIsResetModalOpen(false)}
+        title="Reset Voting Count?"
+        description="Are you sure you want to reset the voting count? This will permanently delete all votes cast by audience devices and set every team's vote tally back to zero."
+        maxWidth="sm"
+      >
+        <div className="space-y-4 pt-2">
+          <div className="p-3.5 rounded-2xl bg-party-surface border-2 border-black flex items-center justify-between">
+            <span className="text-xs font-black uppercase text-gray-300">
+              Current Active Votes
+            </span>
+            <span className="text-xl font-black text-party-pink font-mono">
+              {totalDevices} {totalDevices === 1 ? "ballot" : "ballots"}
+            </span>
+          </div>
+
+          <p className="text-xs text-gray-400 font-bold">
+            Audience members will be able to vote again fresh from their devices once voting is open.
+          </p>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              variant="ghost"
+              onClick={() => setIsResetModalOpen(false)}
+              disabled={isResetting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="pink"
+              onClick={handleResetVotes}
+              isLoading={isResetting}
+              className="shadow-cartoon"
+            >
+              <RotateCcw className="w-4 h-4 mr-1.5" />
+              <span>Yes, Reset All Votes</span>
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
